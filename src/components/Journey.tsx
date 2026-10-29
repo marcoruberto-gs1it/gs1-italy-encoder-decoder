@@ -8,7 +8,7 @@ import { aiLabel } from '../gs1/aiDictionary'
 import { checkDigitSteps } from '../gs1/checkDigit'
 import { BitMap, SchemeSelect } from './EpcParts'
 import { useRef } from 'react'
-import { useMotion, gsap } from '../motion'
+import { useMotion } from '../motion'
 import { SCHEMES_BY_FAMILY } from '../gs1/schemes'
 import { CopyText } from './ui'
 import { BitsPanel, epcRuns } from './ColoredBits'
@@ -84,13 +84,11 @@ export function Journey({ analysis, scheme, onScheme }: Props) {
 
   useMotion(
     scope,
-    () => {
-      gsap
-        .timeline({ defaults: { ease: 'power3.out' } })
-        .from('.step', { y: 22, opacity: 0, duration: 0.5, stagger: 0.08 })
-        .from('.step-num', { scale: 0, duration: 0.4, stagger: 0.08, ease: 'back.out(2.4)' }, '<0.1')
-        .from('.anat', { y: 10, opacity: 0, scale: 0.9, duration: 0.35, stagger: 0.07, ease: 'back.out(2)' }, 0.25)
-        .from('.es-ai', { y: 8, opacity: 0, duration: 0.3, stagger: 0.05 }, 0.2)
+    (m) => {
+      m.from('.step', { y: 22, opacity: 0 }, { duration: 0.5, stagger: 0.08 })
+      m.from('.step-num', { scale: 0 }, { duration: 0.4, stagger: 0.08, at: 0.1, ease: 'back' })
+      m.from('.es-ai', { y: 8, opacity: 0 }, { duration: 0.3, stagger: 0.05, at: 0.2 })
+      m.from('.anat', { y: 10, scale: 0.9, opacity: 0 }, { duration: 0.35, stagger: 0.07, at: 0.25, ease: 'back' })
     },
     [gs1.elementString],
   )

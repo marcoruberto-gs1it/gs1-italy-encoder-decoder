@@ -51,7 +51,7 @@ test('cosa entra nel tag: TDS 1.x senza +AIDC e dominio, ++ con tutto', async ()
 test('l’infografica EPC mostra i valori reali di SGTIN-96', async () => {
   const { HeroEpc } = await import('./HeroEpc')
   const text = renderToString(<HeroEpc />).replace(/<[^>]+>/g, '').replace(/&amp;/g, '&')
-  const a = await analyzeEncode([{ ai: '01', value: '08001234567897' }, { ai: '21', value: '12345' }], { ...params, filter: 1, gcpLength: 7 })
+  const a = await analyzeEncode([{ ai: '01', value: '08000000000019' }, { ai: '21', value: '12345' }], { ...params, filter: 1, gcpLength: 7 })
   const r = a.results.find((x) => x.scheme === 'SGTIN-96')
   if (!r?.ok) throw new Error('SGTIN-96')
   for (const v of [r.uris.pure!, r.uris.tag!, r.hex, r.bits, r.uris.dl!, a.gs1!.elementString]) expect(text, v).toContain(v)

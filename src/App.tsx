@@ -13,7 +13,7 @@ import { VbgCard } from './components/VbgCard'
 import { Summary } from './components/Summary'
 import { Pipeline } from './components/Pipeline'
 import { HeroEpc } from './components/HeroEpc'
-import { useMotion, gsap } from './motion'
+import { useMotion } from './motion'
 import { t, useLang } from './i18n'
 import { LangSwitch } from './components/LangSwitch'
 
@@ -123,8 +123,8 @@ export default function App() {
 
   const hasData = Boolean(analysis && (analysis.ais.length > 0 || analysis.error))
 
-  useMotion(heroRef, () => {
-    gsap.from('.hero-copy > *', { y: 16, opacity: 0, duration: 0.55, stagger: 0.08, ease: 'power3.out' })
+  useMotion(heroRef, (m) => {
+    m.from('.hero-copy > *', { y: 16, opacity: 0 }, { duration: 0.55, stagger: 0.08 })
   }, [hasData])
 
   const openInEncoder = () => {

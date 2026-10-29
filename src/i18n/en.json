@@ -167,7 +167,7 @@
   "Indicatore": "Indicator",
   "Indicatore + Item Reference": "Indicator + Item Reference",
   "Indirizzo": "Address",
-  "Item Reference · 56789 (con l’indicatore 0)": "Item Reference · 56789 (with indicator 0)",
+  "Item Reference · 00001 (con l’indicatore 0)": "Item Reference · 00001 (with indicator 0)",
   "Kill password (32 bit) e access password (32 bit). Non fa parte dei dati GS1.": "Kill password (32 bits) and access password (32 bits). Not part of the GS1 data.",
   "La User Memory contiene dati.": "User Memory holds data.",
   "La chiave è scritta per intero, cifra di controllo compresa.": "The key is written in full, check digit included.",

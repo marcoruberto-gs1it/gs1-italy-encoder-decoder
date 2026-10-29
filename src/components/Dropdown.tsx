@@ -1,7 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Check, ChevronDown } from 'lucide-react'
-import { gsap } from '../motion'
+import { animateIn } from '../motion'
 import { t } from '../i18n'
 
 export type DropdownOption = {
@@ -73,9 +73,7 @@ export function Dropdown({ id, value, options, onChange, placeholder, display, a
       if (!root.current?.contains(target) && !list.current?.contains(target)) setOpen(false)
     }
     document.addEventListener('mousedown', close)
-    if (list.current && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      gsap.fromTo(list.current, { opacity: 0, scale: 0.97 }, { opacity: 1, scale: 1, duration: 0.18, ease: 'power2.out', clearProps: 'transform' })
-    }
+    if (list.current) animateIn(list.current, { opacity: 0, scale: 0.97 }, { duration: 0.18 })
     const sel = list.current?.querySelector<HTMLElement>('[aria-selected="true"]')
     if (sel && list.current) list.current.scrollTop = sel.offsetTop - list.current.clientHeight / 2 + sel.offsetHeight / 2
     return () => document.removeEventListener('mousedown', close)

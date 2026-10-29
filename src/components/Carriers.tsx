@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useMotion, gsap } from '../motion'
+import { useMotion } from '../motion'
 import { Download } from 'lucide-react'
 import { CARRIERS, loadBwip, renderCarrier } from '../gs1/barcodes'
 import type { Gs1Data } from '../gs1/syntax'
@@ -27,9 +27,9 @@ export function Carriers({ data }: { data: Gs1Data }) {
   const scope = useRef<HTMLDivElement>(null)
   useMotion(
     scope,
-    () => {
-      gsap.from('.carrier', { y: 24, opacity: 0, scale: 0.96, duration: 0.5, stagger: 0.07, ease: 'power3.out' })
-      gsap.from('.svg-wrap svg', { clipPath: 'inset(0 100% 0 0)', duration: 0.7, stagger: 0.07, ease: 'power2.inOut', delay: 0.15 })
+    (m) => {
+      m.from('.carrier', { y: 24, scale: 0.96, opacity: 0 }, { duration: 0.5, stagger: 0.07 })
+      m.from('.svg-wrap svg', { clipPath: 'inset(0 100% 0 0)' }, { duration: 0.7, stagger: 0.07, at: 0.15, ease: 'inOut' })
     },
     [lib, data.elementString],
   )

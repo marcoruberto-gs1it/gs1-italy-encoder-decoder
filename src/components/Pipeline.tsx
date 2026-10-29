@@ -1,7 +1,7 @@
 import { useRef, type ReactNode } from 'react'
 import type { Analysis } from '../gs1/analyze'
 import type { Verification } from '../gs1/vbg'
-import { useMotion, gsap } from '../motion'
+import { useMotion } from '../motion'
 import { BarsGlyph, QrGlyph, TagGlyph } from './Illustrations'
 import { epcRuns } from './ColoredBits'
 import { t } from '../i18n'
@@ -19,12 +19,10 @@ export function Pipeline({ analysis, scheme, vbg, tab, onTab }: Props) {
 
   useMotion(
     scope,
-    () => {
-      gsap
-        .timeline({ defaults: { ease: 'power3.out' } })
-        .from('.pl-stage', { y: 18, opacity: 0, duration: 0.5, stagger: 0.09 })
-        .from('.pl-conn-line', { scaleX: 0, transformOrigin: '0% 50%', duration: 0.35, stagger: 0.09 }, '-=0.45')
-      gsap.fromTo('.pl-pulse', { left: '0%', opacity: 0 }, { left: '100%', opacity: 1, duration: 1.3, ease: 'power1.inOut', repeat: -1, stagger: 0.25, repeatDelay: 0.4 })
+    (m) => {
+      // Gli impulsi lungo i collegamenti sono un'animazione CSS continua.
+      m.from('.pl-stage', { y: 18, opacity: 0 }, { duration: 0.5, stagger: 0.09 })
+      m.from('.pl-conn-line', { scaleX: 0, origin: '0% 50%' }, { duration: 0.35, stagger: 0.09, at: 0.05 })
     },
     [gs1?.elementString, scheme],
   )

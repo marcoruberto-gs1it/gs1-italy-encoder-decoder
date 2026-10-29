@@ -41,10 +41,22 @@ Ogni codifica viene riletta con lo stesso motore: se lo schema non restituisce e
 
 Nella versione pubblicata di `TDTtranslator.js`, decodificando un EPC `++` i dati +AIDC che seguono l'hostname venivano scartati. La copia in `src/vendor/tdt` li decodifica come negli schemi `+`; il test `src/gs1/epc.test.ts` verifica l'andata e ritorno di SGTIN++ e DSGTIN++ con lotto e scadenza.
 
+## Esempi
+
+Gli esempi usano codici di GS1 Italy: il GLN di GS1 Italy (8000000000002) e chiavi costruite sul suo GS1 Company Prefix 8000000, registrato su Verified by GS1 (es. GTIN 08000000000019).
+
 ## Licenze
 
-Solo componenti con licenza libera:
+Tutte le librerie, i motori GS1 e i font usati sono open source: nessuna licenza commerciale o proprietaria.
 
-- GS1 TDT (motore e artefatti): Apache 2.0, vedi `src/vendor/tdt/LICENSE` e `DISCLAIMER.md`
-- GS1 Barcode Syntax Engine: Apache 2.0, vedi `src/vendor/gs1/syntax-engine/LICENSE`
-- bwip-js: MIT · React: MIT · lucide-react: ISC · Montserrat e Spline Sans Mono: SIL Open Font License
+| Componente | Licenza |
+| --- | --- |
+| GS1 TDT 2.3 (motore e artefatti) | Apache 2.0 (`src/vendor/tdt/LICENSE`, `DISCLAIMER.md`) |
+| GS1 Barcode Syntax Engine | Apache 2.0 (`src/vendor/gs1/syntax-engine/LICENSE`) |
+| React, React DOM | MIT |
+| bwip-js (simboli) | MIT |
+| lucide-react (icone) | ISC |
+| Montserrat, Spline Sans Mono (Google Fonts) | SIL Open Font License |
+| Strumenti di sviluppo (Vite, Vitest, TypeScript, …) | MIT, Apache 2.0, ISC, MPL 2.0, BSD |
+
+Le animazioni usano la Web Animations API del browser e CSS, senza librerie. Il logo GS1 Italy è un marchio di GS1 Italy e non è coperto dalla licenza del codice.

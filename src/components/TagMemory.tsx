@@ -4,7 +4,7 @@ import { epcBank, hexWord } from '../gs1/rfid'
 import { segmentColors, CRC_COLOR, PC_COLOR } from '../colors'
 import { SchemeSelect } from './EpcParts'
 import { SCHEMES_BY_FAMILY } from '../gs1/schemes'
-import { useMotion, gsap } from '../motion'
+import { useMotion } from '../motion'
 import { CopyText } from './ui'
 import { BitsPanel, bankRuns } from './ColoredBits'
 import { TagContents } from './Coverage'
@@ -35,15 +35,12 @@ export function TagMemory({ analysis, scheme, onScheme }: Props) {
   const scope = useRef<HTMLDivElement>(null)
   useMotion(
     scope,
-    () => {
-      // Il chip scrive la memoria: le parole compaiono riga per riga, il tag emette le onde radio.
-      gsap
-        .timeline({ defaults: { ease: 'power3.out' } })
-        .from('.tag-svg', { y: 20, rotate: -3, opacity: 0, duration: 0.6 })
-        .from('.wg-row:not(.wg-head)', { x: -14, opacity: 0, duration: 0.3, stagger: 0.06 }, '-=0.3')
-        .from('.wg-row:not(.wg-head) .wg-bit', { scale: 0.3, opacity: 0, duration: 0.18, stagger: { each: 0.004, from: 'start' } }, '<')
-        .from('.legend', { opacity: 0, y: 6, duration: 0.25, stagger: 0.025 }, '-=0.3')
-      gsap.to('.ga-wave', { attr: { r: 150 }, strokeOpacity: 0, duration: 2.6, ease: 'sine.out', stagger: { each: 0.85, repeat: -1 } })
+    (m) => {
+      // Il chip scrive la memoria: le parole compaiono riga per riga (le onde radio sono in CSS).
+      const tag = m.from('.tag-svg', { y: 20, rotate: -3, opacity: 0 }, { duration: 0.6 })
+      m.from('.wg-row:not(.wg-head)', { x: -14, opacity: 0 }, { duration: 0.3, stagger: 0.06, at: tag - 0.3 })
+      const bits = m.from('.wg-row:not(.wg-head) .wg-bit', { scale: 0.3, opacity: 0 }, { duration: 0.18, stagger: 0.004, at: tag - 0.3 })
+      m.from('.legend', { y: 6, opacity: 0 }, { duration: 0.25, stagger: 0.025, at: bits - 0.3 })
     },
     [ok?.hex],
   )

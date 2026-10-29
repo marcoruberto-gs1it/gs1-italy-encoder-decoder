@@ -7,7 +7,7 @@ import { aiLabel } from '../gs1/aiDictionary'
 import { computeCheckDigit, isCheckDigitValid } from '../gs1/checkDigit'
 import { SchemeSelect } from './EpcParts'
 import { Dropdown } from './Dropdown'
-import { useMotion, gsap } from '../motion'
+import { useMotion } from '../motion'
 import { t } from '../i18n'
 
 export type EncoderState = { keyId: string; values: Record<string, string>; extras: Ai[] }
@@ -49,13 +49,13 @@ const EXAMPLE_EXTRAS: Ai[] = [
 ]
 
 const DECODE_SAMPLES: { label: string; text: string }[] = [
-  { label: 'SGTIN-96 (hex)', text: '3035E85B4837754000003039' },
-  { get label() { return t('SGTIN-96 (binario)') }, text: '0011 0000 0011 0101 1110 1000 0101 1011 0100 1000 0011 0111 0111 0101 0100 0000 0000 0000 0000 0000 0011 0000 0011 1001' },
-  { get label() { return t('SGTIN+ con lotto e scadenza') }, text: 'F790800123456789705181C883216727D8B9BCF8' },
-  { get label() { return t('SGTIN++ con dominio') }, text: 'FD90800123456789705181CC7419F9B1D3D2E083216727D8B9BCF8' },
-  { label: 'EPC Tag URI', text: 'urn:epc:tag:sscc-96:0.8001234.3000000001' },
-  { label: 'GS1 Digital Link', text: 'https://id.gs1.org/01/08001234567897/10/LOT42/21/ABC123?17=271231' },
-  { label: 'Element string', text: '(01)08001234567897(17)271231(10)LOT42(21)12345' },
+  { label: 'SGTIN-96 (hex)', text: '3035E8480000004000003039' },
+  { get label() { return t('SGTIN-96 (binario)') }, text: '0011 0000 0011 0101 1110 1000 0100 1000 0000 0000 0000 0000 0000 0000 0100 0000 0000 0000 0000 0000 0011 0000 0011 1001' },
+  { get label() { return t('SGTIN+ con lotto e scadenza') }, text: 'F790800000000001905181C883296727C6C2E6F3E000' },
+  { get label() { return t('SGTIN++ con dominio') }, text: 'FD90800000000001905181CC6CFCD8E9E9704194B393E3617379F000' },
+  { label: 'EPC Tag URI', text: 'urn:epc:tag:sscc-96:0.8000000.3000000001' },
+  { label: 'GS1 Digital Link', text: 'https://id.gs1.org/01/08000000000019/10/LOT42/21/ABC123?17=271231' },
+  { label: 'Element string', text: '(01)08000000000019(17)271231(10)LOT42(21)12345' },
 ]
 
 export function InputPanel(p: Props) {
@@ -66,8 +66,8 @@ export function InputPanel(p: Props) {
   const schemes = family ? SCHEMES_BY_FAMILY[family] : []
   const kind = p.scheme ? kindOf(p.scheme) : null
 
-  useMotion(scope, () => {
-    gsap.from('.ga-in', { y: 14, opacity: 0, duration: 0.45, stagger: 0.06, ease: 'power3.out' })
+  useMotion(scope, (m) => {
+    m.from('.ga-in', { y: 14, opacity: 0 }, { duration: 0.45, stagger: 0.06 })
   }, [mode, encoder.keyId])
 
   const setValue = (ai: string, value: string) => setEncoder({ ...encoder, values: { ...encoder.values, [ai]: value } })

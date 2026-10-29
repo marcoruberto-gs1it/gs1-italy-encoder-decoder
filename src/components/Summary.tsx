@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react'
-import { useMotion, gsap } from '../motion'
+import { useMotion } from '../motion'
 import type { Analysis } from '../gs1/analyze'
 import type { Verification } from '../gs1/vbg'
 import { aiLabel } from '../gs1/aiDictionary'
@@ -14,8 +14,8 @@ export function Summary({ analysis, busy, vbg, onTab }: Props) {
   const signature = analysis.ais.map((a) => a.ai).join(',')
   useMotion(
     scope,
-    () => {
-      gsap.from('.ai-item', { y: 12, opacity: 0, scale: 0.94, duration: 0.4, stagger: 0.06, ease: 'back.out(1.8)' })
+    (m) => {
+      m.from('.ai-item', { y: 12, scale: 0.94, opacity: 0 }, { duration: 0.4, stagger: 0.06, ease: 'back' })
     },
     [signature, Boolean(analysis.error)],
   )

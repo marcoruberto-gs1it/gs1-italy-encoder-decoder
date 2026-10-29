@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { useMotion, gsap } from '../motion'
+import { useMotion } from '../motion'
 import { CheckCircle2, XCircle } from 'lucide-react'
 import { Dropdown } from './Dropdown'
 import type { SchemeResult, Segment } from '../gs1/epc'
@@ -54,11 +54,9 @@ export function BitMap({ result }: { result: Extract<SchemeResult, { ok: true }>
   // I campi entrano nella barra uno dopo l'altro, nell'ordine in cui il tag li memorizza.
   useMotion(
     scope,
-    () => {
-      gsap
-        .timeline({ defaults: { ease: 'power3.out' } })
-        .from('.bitbar-seg', { scaleX: 0, transformOrigin: '0% 50%', duration: 0.45, stagger: 0.07 })
-        .from('.seg-card', { y: 16, opacity: 0, duration: 0.4, stagger: 0.05 }, '-=0.35')
+    (m) => {
+      const bar = m.from('.bitbar-seg', { scaleX: 0, origin: '0% 50%' }, { duration: 0.45, stagger: 0.07 })
+      m.from('.seg-card', { y: 16, opacity: 0 }, { duration: 0.4, stagger: 0.05, at: bar - 0.35 })
     },
     [result.scheme, result.hex],
   )

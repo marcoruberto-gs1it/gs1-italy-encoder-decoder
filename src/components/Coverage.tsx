@@ -4,7 +4,7 @@ import type { Analysis } from '../gs1/analyze'
 import type { SchemeResult } from '../gs1/epc'
 import { KIND_INFO } from '../gs1/schemes'
 import { aiLabel } from '../gs1/aiDictionary'
-import { useMotion, gsap } from '../motion'
+import { useMotion } from '../motion'
 import { t } from '../i18n'
 
 type State = 'in' | 'out' | 'derived'
@@ -50,9 +50,9 @@ export function TagContents({ analysis, result }: { analysis: Analysis; result: 
   const ok = result?.ok ? result : null
   useMotion(
     scope,
-    () => {
-      gsap.from('.tc-item', { y: 8, opacity: 0, duration: 0.3, stagger: 0.05, ease: 'power2.out' })
-      gsap.from('.tc-item.out .tc-strike', { scaleX: 0, transformOrigin: '0% 50%', duration: 0.4, stagger: 0.08, delay: 0.25, ease: 'power2.inOut' })
+    (m) => {
+      m.from('.tc-item', { y: 8, opacity: 0 }, { duration: 0.3, stagger: 0.05 })
+      m.from('.tc-item.out .tc-strike', { scaleX: 0, origin: '0% 50%' }, { duration: 0.4, stagger: 0.08, at: 0.25, ease: 'inOut' })
     },
     [ok?.scheme, ok?.hex],
   )

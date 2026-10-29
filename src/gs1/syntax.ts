@@ -8,7 +8,7 @@ import type { Ai } from './schemes'
 
 export type Gs1Data = {
   ais: Ai[]
-  /** Element string con parentesi, es. (01)08001234567897(21)12345 */
+  /** Element string con parentesi, es. (01)08000000000019(21)12345 */
   elementString: string
   /** Dati come trasmessi dal lettore, con ^ al posto di FNC1/GS. */
   scanData: string
