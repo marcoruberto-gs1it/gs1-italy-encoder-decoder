@@ -378,12 +378,38 @@ p {
 .he-row::before {
   content: '';
   position: absolute;
-  left: -16px;
+  left: -10px;
   top: 50%;
-  width: 16px;
+  width: 10px;
   height: 2.5px;
   background: var(--orange);
   border-radius: 2px;
+}
+/* Numero del passaggio, sul bus */
+.he-step {
+  position: absolute;
+  left: -25px;
+  top: 50%;
+  translate: 0 -50%;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--orange);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  box-shadow: 0 0 0 3px var(--surface);
+  z-index: 1;
+}
+.he-direction {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: -2px;
 }
 .he-icon {
   width: 40px;

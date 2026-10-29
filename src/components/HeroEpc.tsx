@@ -29,6 +29,7 @@ const PARTS: { p: Part; label: string }[] = [
   { p: 'ser', get label() { return t('Numero di serie · 12345') } },
 ]
 
+/** Le forme dal livello più basso (bit nel tag) a quello più alto (link web). */
 type Row = { id: string; name: string; note: string; icon: ReactNode; value: ReactNode }
 
 const icon = (children: ReactNode, viewBox = '0 0 40 40') => (
@@ -39,33 +40,9 @@ const icon = (children: ReactNode, viewBox = '0 0 40 40') => (
 
 const ROWS: Row[] = [
   {
-    id: 'pure',
-    name: 'EPC Pure Identity URI',
-    get note() { return t('L’identità, per i sistemi informativi ed EPCIS') },
-    icon: icon(<text x="20" y="25" textAnchor="middle" fontSize="12" fontWeight="800" fill="#002c6c" fontFamily="Montserrat, sans-serif">urn</text>),
-    value: (
-      <>
-        urn:epc:id:sgtin:<P p="gcp">8000000</P>.<P p="ind">0</P>
-        <P p="ref">00001</P>.<P p="ser">12345</P>
-      </>
-    ),
-  },
-  {
-    id: 'tag',
-    name: 'EPC Tag URI',
-    get note() { return t('Aggiunge schema e filter value del tag') },
-    icon: icon(<text x="20" y="25" textAnchor="middle" fontSize="12" fontWeight="800" fill="#f26334" fontFamily="Montserrat, sans-serif">tag</text>),
-    value: (
-      <>
-        urn:epc:tag:sgtin-96:<P p="flt">1</P>.<P p="gcp">8000000</P>.<P p="ind">0</P>
-        <P p="ref">00001</P>.<P p="ser">12345</P>
-      </>
-    ),
-  },
-  {
     id: 'bin',
     get name() { return t('Binario nel tag RFID') },
-    get note() { return t('96 bit nel banco EPC: header, filter, partizione, poi la chiave') },
+    get note() { return t('Il dato grezzo: 96 bit nel banco EPC (header, filter, partizione, chiave)') },
     icon: icon(<TagGlyph x={1} y={10} w={38} h={20} />),
     value: (
       <span className="hero-bits">
@@ -80,28 +57,38 @@ const ROWS: Row[] = [
   {
     id: 'hex',
     get name() { return t('Esadecimale') },
-    get note() { return t('Lo stesso binario, come lo leggono i lettori RFID') },
+    get note() { return t('Gli stessi bit a gruppi di 4: è quello che mostrano i lettori RFID') },
     icon: icon(<text x="20" y="25" textAnchor="middle" fontSize="12" fontWeight="800" fill="#1d4f9a" fontFamily="'Spline Sans Mono', monospace">0x</text>),
     value: <>3035E8480000004000003039</>,
   },
   {
-    id: 'dl',
-    name: 'GS1 Digital Link URI',
-    get note() { return t('Lo stesso EPC sul web, in un QR Code') },
-    icon: icon(<QrGlyph x={6} y={6} size={28} />),
+    id: 'tag',
+    name: 'EPC Tag URI',
+    get note() { return t('I campi del tag in testo: schema, filter value e chiave') },
+    icon: icon(<text x="20" y="25" textAnchor="middle" fontSize="12" fontWeight="800" fill="#f26334" fontFamily="Montserrat, sans-serif">tag</text>),
     value: (
       <>
-        https://id.gs1.org/01/<P p="ind">0</P>
-        <P p="gcp">8000000</P>
-        <P p="ref">00001</P>
-        <P p="cd">9</P>/21/<P p="ser">12345</P>
+        urn:epc:tag:sgtin-96:<P p="flt">1</P>.<P p="gcp">8000000</P>.<P p="ind">0</P>
+        <P p="ref">00001</P>.<P p="ser">12345</P>
+      </>
+    ),
+  },
+  {
+    id: 'pure',
+    name: 'EPC Pure Identity URI',
+    get note() { return t('Senza i dettagli del tag resta l’identità, usata in EPCIS') },
+    icon: icon(<text x="20" y="25" textAnchor="middle" fontSize="12" fontWeight="800" fill="#002c6c" fontFamily="Montserrat, sans-serif">urn</text>),
+    value: (
+      <>
+        urn:epc:id:sgtin:<P p="gcp">8000000</P>.<P p="ind">0</P>
+        <P p="ref">00001</P>.<P p="ser">12345</P>
       </>
     ),
   },
   {
     id: 'es',
     get name() { return t('Element string GS1') },
-    get note() { return t('Nei barcode GS1-128 e GS1 DataMatrix') },
+    get note() { return t('La stessa chiave con gli AI GS1 e la cifra di controllo, come nei barcode') },
     icon: icon(
       <>
         <BarsGlyph x={4} y={8} w={18} h={24} count={7} seed={8} />
@@ -114,6 +101,20 @@ const ROWS: Row[] = [
         <P p="gcp">8000000</P>
         <P p="ref">00001</P>
         <P p="cd">9</P>(21)<P p="ser">12345</P>
+      </>
+    ),
+  },
+  {
+    id: 'dl',
+    name: 'GS1 Digital Link URI',
+    get note() { return t('La chiave diventa un link web, anche in un QR Code') },
+    icon: icon(<QrGlyph x={6} y={6} size={28} />),
+    value: (
+      <>
+        https://id.gs1.org/01/<P p="ind">0</P>
+        <P p="gcp">8000000</P>
+        <P p="ref">00001</P>
+        <P p="cd">9</P>/21/<P p="ser">12345</P>
       </>
     ),
   },
@@ -195,8 +196,12 @@ export function HeroEpc() {
         <span className="he-bus" aria-hidden>
           <span className="he-pulse" />
         </span>
-        {ROWS.map((r) => (
+        <span className="he-direction">{t('Dai bit nel tag al link sul web')}</span>
+        {ROWS.map((r, i) => (
           <div className="he-row" key={r.id}>
+            <span className="he-step" aria-hidden>
+              {i + 1}
+            </span>
             <span className="he-icon">{r.icon}</span>
             <span className="he-text">
               <span className="he-name">
