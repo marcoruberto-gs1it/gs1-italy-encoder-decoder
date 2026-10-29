@@ -1,5 +1,7 @@
 # Encoder · Decoder GS1 · GS1 Italy
 
+**App online:** https://marcoruberto-gs1it.github.io/gs1-italy-encoder-decoder/
+
 Web app per codificare e decodificare le chiavi GS1 in tutte le loro rappresentazioni, mostrando ogni passaggio:
 
 - **Dati GS1**: element string, dati con FNC1, GS1 Digital Link URI, GS1 AI JSON, validati con il GS1 Barcode Syntax Dictionary.
@@ -19,7 +21,7 @@ npm run dev
 npm test
 ```
 
-Il token Verified by GS1 resta lato server: il browser chiama `/api/vbg` e il proxy di Vite aggiunge l'header `Authorization`. In produzione imposta `VITE_VBG_BASE` sull'URL di un backend che faccia lo stesso (per esempio il Worker di gs1-italy-vbg-app, che va abilitato per l'origine della nuova app nel CORS).
+Il token Verified by GS1 resta lato server: il browser chiama `/api/vbg` e il proxy di Vite aggiunge l'header `Authorization`. Su GitHub Pages (workflow `.github/workflows/pages.yml`, a ogni push su `main`) `VITE_VBG_BASE` punta al Worker Cloudflare di gs1-italy-vbg-app, che custodisce il token e accetta le chiamate da `marcoruberto-gs1it.github.io`.
 
 ## Come funziona
 
