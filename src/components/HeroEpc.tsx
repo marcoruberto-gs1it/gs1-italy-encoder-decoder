@@ -58,14 +58,14 @@ const ROWS: Row[] = [
     id: 'hex',
     get name() { return t('Esadecimale') },
     get note() { return t('Gli stessi bit a gruppi di 4: è quello che mostrano i lettori RFID') },
-    icon: icon(<text x="20" y="25" textAnchor="middle" fontSize="12" fontWeight="800" fill="#1d4f9a" fontFamily="'Spline Sans Mono', monospace">0x</text>),
+    icon: icon(<text x="20" y="25" textAnchor="middle" fontSize="12" fontWeight="600" fill="#0b4a9e" fontFamily="'IBM Plex Mono', monospace">0x</text>),
     value: <>3035E8480000004000003039</>,
   },
   {
     id: 'tag',
     name: 'EPC Tag URI',
     get note() { return t('I campi del tag in testo: schema, filter value e chiave') },
-    icon: icon(<text x="20" y="25" textAnchor="middle" fontSize="12" fontWeight="800" fill="#f26334" fontFamily="Montserrat, sans-serif">tag</text>),
+    icon: icon(<text x="20" y="25" textAnchor="middle" fontSize="12" fontWeight="600" fill="#c2410c" fontFamily="'IBM Plex Mono', monospace">tag</text>),
     value: (
       <>
         urn:epc:tag:sgtin-96:<P p="flt">1</P>.<P p="gcp">8000000</P>.<P p="ind">0</P>
@@ -77,7 +77,7 @@ const ROWS: Row[] = [
     id: 'pure',
     name: 'EPC Pure Identity URI',
     get note() { return t('Senza i dettagli del tag resta l’identità, usata in EPCIS') },
-    icon: icon(<text x="20" y="25" textAnchor="middle" fontSize="12" fontWeight="800" fill="#002c6c" fontFamily="Montserrat, sans-serif">urn</text>),
+    icon: icon(<text x="20" y="25" textAnchor="middle" fontSize="12" fontWeight="600" fill="#002c6c" fontFamily="'IBM Plex Mono', monospace">urn</text>),
     value: (
       <>
         urn:epc:id:sgtin:<P p="gcp">8000000</P>.<P p="ind">0</P>

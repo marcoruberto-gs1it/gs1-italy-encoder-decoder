@@ -28,7 +28,6 @@ export function Carriers({ data }: { data: Gs1Data }) {
   useMotion(
     scope,
     (m) => {
-      m.from('.carrier', { y: 24, scale: 0.96, opacity: 0 }, { duration: 0.5, stagger: 0.07 })
       m.from('.svg-wrap svg', { clipPath: 'inset(0 100% 0 0)' }, { duration: 0.7, stagger: 0.07, at: 0.15, ease: 'inOut' })
     },
     [lib, data.elementString],

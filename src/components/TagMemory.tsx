@@ -1,12 +1,9 @@
 import { useMemo, useRef, useState } from 'react'
 import type { Analysis } from '../gs1/analyze'
 import { epcBank, hexWord } from '../gs1/rfid'
-import { segmentColors, CRC_COLOR, PC_COLOR } from '../colors'
-import { SchemeSelect } from './EpcParts'
-import { SCHEMES_BY_FAMILY } from '../gs1/schemes'
+import { segmentColors, inkOn, CRC_COLOR, PC_COLOR } from '../colors'
 import { useMotion } from '../motion'
 import { CopyText } from './ui'
-import { BitsPanel, bankRuns } from './ColoredBits'
 import { TagContents } from './Coverage'
 import { t } from '../i18n'
 
@@ -14,7 +11,7 @@ type Props = { analysis: Analysis; scheme: string | null; onScheme: (s: string) 
 
 type Owner = { label: string; color: string; group: string }
 
-export function TagMemory({ analysis, scheme, onScheme }: Props) {
+export function TagMemory({ analysis, scheme }: Props) {
   const [hover, setHover] = useState<string | null>(null)
   const result = analysis.results.find((r) => r.scheme === scheme)
   const ok = result?.ok ? result : null
@@ -50,7 +47,6 @@ export function TagMemory({ analysis, scheme, onScheme }: Props) {
 
   return (
     <div className="tagmem" ref={scope}>
-      <SchemeSelect schemes={SCHEMES_BY_FAMILY[analysis.key!.id]} results={analysis.results} scheme={scheme} onScheme={onScheme} />
       <TagContents analysis={analysis} result={result} />
       {ok && model && (
         <>
@@ -58,7 +54,6 @@ export function TagMemory({ analysis, scheme, onScheme }: Props) {
             <TagIllustration hex={ok.hex} scheme={ok.scheme} />
             <div className="tag-facts">
               <CopyText label={t('Banco EPC completo (CRC + PC + EPC) in esadecimale')} value={model.bank.words.map(hexWord).join(' ')} />
-              <BitsPanel label={t('Banco EPC completo in binario')} runs={bankRuns(model.bank, ok)} />
               <div className="facts">
                 <div>
                   <span className="muted">StoredCRC</span>
@@ -109,7 +104,7 @@ export function TagMemory({ analysis, scheme, onScheme }: Props) {
                           <span
                             key={i}
                             className={`wg-bit ${hover && hover !== o.group ? 'dim' : ''}`}
-                            style={{ background: o.color }}
+                            style={{ background: o.color, color: inkOn(o.color) }}
                             title={`${o.label} · bit ${(row * 16 + i).toString(16).toUpperCase()}h`}
                             onMouseEnter={() => setHover(o.group)}
                           >
@@ -169,7 +164,7 @@ function TagIllustration({ hex, scheme }: { hex: string; scheme: string }) {
   const h = Math.max(200, 132 + 18 + lines.length * 14 + 20)
   return (
     <svg className="tag-svg" viewBox={`0 0 360 ${h}`} role="img" aria-label={`Tag RFID con EPC ${hex}`}>
-      <rect x="4" y="4" width="352" height={h - 8} rx="18" fill="#fff" stroke="#c9d3e3" />
+      <rect x="4" y="4" width="352" height={h - 8} rx="8" fill="#fff" stroke="#dde2e8" />
       <path
         d="M30 100 h30 v-55 h40 v110 h40 v-110 h30 v55 M190 100 v-55 h30 v110 h40 v-110 h40 v55 h30"
         fill="none"
@@ -185,7 +180,7 @@ function TagIllustration({ hex, scheme }: { hex: string; scheme: string }) {
       <text x="180" y="104" textAnchor="middle" fontSize="9" fill="#fff" fontFamily="var(--font-mono)">
         IC
       </text>
-      <rect x="64" y="132" width="232" height={18 + lines.length * 14} rx="8" fill="rgba(255,255,255,0.92)" stroke="#dce3ee" />
+      <rect x="64" y="132" width="232" height={18 + lines.length * 14} rx="4" fill="rgba(255,255,255,0.92)" stroke="#dde2e8" />
       <text x="180" y="146" textAnchor="middle" fontSize="10" fill="#f26334" fontWeight="700" fontFamily="var(--font-ui)">
         {scheme}
       </text>

@@ -7,8 +7,6 @@ import { t } from '../i18n'
 import { aiLabel } from '../gs1/aiDictionary'
 import { checkDigitSteps } from '../gs1/checkDigit'
 import { BitMap, SchemeSelect } from './EpcParts'
-import { useRef } from 'react'
-import { useMotion } from '../motion'
 import { SCHEMES_BY_FAMILY } from '../gs1/schemes'
 import { CopyText } from './ui'
 import { BitsPanel, epcRuns } from './ColoredBits'
@@ -80,21 +78,9 @@ export function Journey({ analysis, scheme, onScheme }: Props) {
   const cdBody = anatomy ? anatomy.slice(0, anatomy.findIndex((p) => p.tone === 'cd')).map((p) => p.digits).join('') : ''
   const steps = cdPart ? checkDigitSteps(cdBody) : null
   const result = analysis.results.find((r) => r.scheme === scheme)
-  const scope = useRef<HTMLDivElement>(null)
-
-  useMotion(
-    scope,
-    (m) => {
-      m.from('.step', { y: 22, opacity: 0 }, { duration: 0.5, stagger: 0.08 })
-      m.from('.step-num', { scale: 0 }, { duration: 0.4, stagger: 0.08, at: 0.1, ease: 'back' })
-      m.from('.es-ai', { y: 8, opacity: 0 }, { duration: 0.3, stagger: 0.05, at: 0.2 })
-      m.from('.anat', { y: 10, scale: 0.9, opacity: 0 }, { duration: 0.35, stagger: 0.07, at: 0.25, ease: 'back' })
-    },
-    [gs1.elementString],
-  )
 
   return (
-    <div className="journey" ref={scope}>
+    <div className="journey">
       <Step n={1} title={t('I dati GS1')}>
         <p className="lead">{t('Ogni dato è preceduto dal suo Application Identifier (AI), che ne dice il significato e il formato.')}</p>
         <div className="es-line mono">
@@ -269,7 +255,8 @@ function Transform({ analysis, result }: { analysis: Analysis; result: Extract<S
           const inKey = analysis.key?.fields.some((f) => f.ai === a.ai)
           return (
             <div key={a.ai} className={`tf-ai ${inKey ? '' : 'plus'}`}>
-              <span className="ai-tag">({a.ai})</span> {aiLabel(a.ai)}
+              <span className="ai-tag">({a.ai})</span>
+              <span className="tf-label">{aiLabel(a.ai)}</span>
               <span className="mono">{a.value}</span>
               <span className="kind kind-plus">{inKey ? t('chiave') : '+AIDC'}</span>
             </div>

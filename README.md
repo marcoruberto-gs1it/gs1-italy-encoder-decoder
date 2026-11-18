@@ -36,6 +36,9 @@ Il token Verified by GS1 resta lato server: il browser chiama `/api/vbg` e il pr
 | `src/gs1/rfid.ts` | PC word e CRC-16 del banco EPC (ISO/IEC 18000-63) |
 | `src/gs1/barcodes.ts` | Simboli con bwip-js (caricato solo nella scheda Barcode) |
 | `src/gs1/vbg.ts` | Client Verified by GS1 (da gs1-italy-vbg-app) |
+| `src/issues.ts` | Segnalazioni (errori, dati mancanti, dati fuori dal tag) con l'azione che risolve ciascuna |
+| `src/urlState.ts` | Stato nell'indirizzo della pagina, per condividere una codifica o una decodifica con un link |
+| `src/motion.ts` | Animazioni con GSAP: è l'unico file che lo importa |
 
 Ogni codifica viene riletta con lo stesso motore: se lo schema non restituisce esattamente i dati di partenza (per esempio un seriale con zeri iniziali in SGTIN-96) lo schema è segnalato come non utilizzabile, con il motivo.
 
@@ -49,7 +52,7 @@ Gli esempi usano codici di GS1 Italy: il GLN di GS1 Italy (8000000000002) e chia
 
 ## Licenze
 
-Tutte le librerie, i motori GS1 e i font usati sono open source: nessuna licenza commerciale o proprietaria.
+I motori GS1, i font e le librerie sono open source, tranne GSAP: è gratuito anche per uso commerciale, ma con la licenza standard di GSAP, non con una licenza open source. Lo usa solo `src/motion.ts`, così si può sostituire senza toccare il resto.
 
 | Componente | Licenza |
 | --- | --- |
@@ -58,7 +61,8 @@ Tutte le librerie, i motori GS1 e i font usati sono open source: nessuna licenza
 | React, React DOM | MIT |
 | bwip-js (simboli) | MIT |
 | lucide-react (icone) | ISC |
-| Montserrat, Spline Sans Mono (Google Fonts) | SIL Open Font License |
+| GSAP (animazioni) | [Licenza standard GSAP](https://gsap.com/standard-license), gratuita |
+| IBM Plex Sans e IBM Plex Mono (font, da Google Fonts) | SIL Open Font License 1.1 |
 | Strumenti di sviluppo (Vite, Vitest, TypeScript, …) | MIT, Apache 2.0, ISC, MPL 2.0, BSD |
 
-Le animazioni usano la Web Animations API del browser e CSS, senza librerie. Il logo GS1 Italy è un marchio di GS1 Italy e non è coperto dalla licenza del codice.
+Le animazioni usano GSAP (in `src/motion.ts`) e CSS. Il logo GS1 Italy è un marchio di GS1 Italy e non è coperto dalla licenza del codice.

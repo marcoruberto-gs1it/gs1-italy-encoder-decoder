@@ -1,31 +1,35 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowUpRight, Barcode, BadgeCheck, Cpu, FileCode2, Route } from 'lucide-react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { ArrowUpRight, Barcode, BadgeCheck, ChevronDown, PenLine, Route, ScanLine } from 'lucide-react'
 import logo from './assets/gs1-italy-logo.png'
 import { analyzeDecode, analyzeEncode, type Analysis, type Params } from './gs1/analyze'
 import { KEY_TYPES, SCHEMES_BY_FAMILY, keyType, type Ai } from './gs1/schemes'
 import { canVerify, verifyKey, type Verification } from './gs1/vbg'
-import { InputPanel, type EncoderState } from './components/InputPanel'
+import { InputPanel, withExample, type EncoderState } from './components/InputPanel'
 import { Journey } from './components/Journey'
 import { Formats } from './components/Formats'
 import { TagMemory } from './components/TagMemory'
 import { Carriers } from './components/Carriers'
 import { VbgCard } from './components/VbgCard'
-import { Summary } from './components/Summary'
-import { Pipeline } from './components/Pipeline'
-import { HeroEpc } from './components/HeroEpc'
-import { useMotion } from './motion'
+import { Readout } from './components/Readout'
+import { StartPanel } from './components/StartPanel'
 import { t, useLang } from './i18n'
 import { LangSwitch } from './components/LangSwitch'
+import { readUrlState, writeUrlState, type Tab } from './urlState'
+import { issuesOf, type IssueAction, type MissingField } from './issues'
+import { flash, intro } from './motion'
+import { Section, type Tone } from './components/Section'
+import { DigitalLinkIcon, MemoryIcon } from './components/Art'
+import { epcBank, hexWord } from './gs1/rfid'
+import { CARRIERS } from './gs1/barcodes'
 
 export type Mode = 'encode' | 'decode'
-type Tab = 'journey' | 'formats' | 'rfid' | 'barcode' | 'vbg'
 
-const TABS: { id: Tab; label: string; icon: typeof Route }[] = [
-  { id: 'journey', get label() { return t('Percorso') }, icon: Route },
-  { id: 'rfid', label: 'Tag RFID', icon: Cpu },
-  { id: 'barcode', get label() { return t('Barcode e QR') }, icon: Barcode },
-  { id: 'formats', get label() { return t('Tutti i formati') }, icon: FileCode2 },
-  { id: 'vbg', label: 'Verified by GS1', icon: BadgeCheck },
+const SECTIONS: { id: Tab; label: string; icon: (p: { size?: number }) => ReactNode; tone: Tone }[] = [
+  { id: 'journey', get label() { return t('Passo per passo') }, icon: Route, tone: 'blue' },
+  { id: 'rfid', get label() { return t('Memoria del tag') }, icon: MemoryIcon, tone: 'teal' },
+  { id: 'barcode', get label() { return t('Barcode e QR') }, icon: Barcode, tone: 'forest' },
+  { id: 'formats', get label() { return t('Tutti i formati') }, icon: DigitalLinkIcon, tone: 'teal' },
+  { id: 'vbg', label: 'Verified by GS1', icon: BadgeCheck, tone: 'blue' },
 ]
 
 const STANDARDS = [
@@ -63,19 +67,22 @@ function encoderAis(e: EncoderState): Ai[] {
 /** Schema proposto: il primo + della chiave (porta anche i dati aggiuntivi senza partizione). */
 const defaultScheme = (family: string) => SCHEMES_BY_FAMILY[family]?.find((s) => s.endsWith('+')) ?? SCHEMES_BY_FAMILY[family]?.[0] ?? null
 
+/** Il campo su cui si scrive: testo da decodificare o primo dato della chiave. */
+const isEditable = (el: EventTarget | null) => el instanceof HTMLElement && (el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName))
+
 export default function App() {
   // Al cambio di lingua si ridisegna tutto e si rifà l'analisi (i testi dei campi del tag nascono lì).
   const language = useLang()
-  const [mode, setMode] = useState<Mode>('encode')
-  const [encoder, setEncoder] = useState<EncoderState>(emptyEncoder)
-  const [decodeText, setDecodeText] = useState('')
-  const [params, setParams] = useState<Params>({ filter: 1, hostname: 'id.gs1.org', gcpLength: null })
+  const initial = useMemo(() => readUrlState(emptyEncoder), [])
+  const [mode, setMode] = useState<Mode>(initial.mode)
+  const [encoder, setEncoder] = useState<EncoderState>(initial.encoder)
+  const [decodeText, setDecodeText] = useState(initial.decodeText)
+  const [params, setParams] = useState<Params>({ filter: 1, hostname: 'id.gs1.org', gcpLength: null, ...initial.params })
   const [analysis, setAnalysis] = useState<Analysis | null>(null)
   const [busy, setBusy] = useState(false)
-  const [tab, setTab] = useState<Tab>('journey')
-  const [scheme, setScheme] = useState<string | null>(null)
+  const [open, setOpen] = useState<Tab[]>(initial.open)
+  const [scheme, setScheme] = useState<string | null>(initial.scheme)
   const [vbg, setVbg] = useState<{ id: string; result: Verification | null } | null>(null)
-  const heroRef = useRef<HTMLDivElement>(null)
 
   const ais = useMemo(() => encoderAis(encoder), [encoder])
   const primary = analysis?.ais[0]
@@ -123,9 +130,62 @@ export default function App() {
 
   const hasData = Boolean(analysis && (analysis.ais.length > 0 || analysis.error))
 
-  useMotion(heroRef, (m) => {
-    m.from('.hero-copy > *', { y: 16, opacity: 0 }, { duration: 0.55, stagger: 0.08 })
-  }, [hasData])
+  // Campi obbligatori della chiave ancora vuoti, quando l'utente ha già iniziato a scrivere.
+  const missing = useMemo<MissingField[]>(() => {
+    if (mode !== 'encode') return []
+    const k = keyType(encoder.keyId)!
+    const started = k.fields.some((f) => (encoder.values[f.ai] ?? '').trim()) || encoder.extras.some((x) => x.value.trim())
+    return started ? k.fields.filter((f) => !f.optional && !(encoder.values[f.ai] ?? '').trim()).map((f) => ({ ai: f.ai, label: f.label })) : []
+  }, [mode, encoder])
+  const issues = useMemo(() => (analysis ? issuesOf(analysis, active, mode, missing) : []), [analysis, active, mode, missing])
+
+  const onAction = (a: IssueAction) => {
+    if ('scheme' in a) return setScheme(a.scheme)
+    const el = document.getElementById(a.focus)
+    if (!el) return
+    el.focus({ preventScroll: true })
+    // Sui monitor larghi la colonna dei dati scorre da sola: si porta il campo al centro di quella, non della pagina.
+    const pane = el.closest<HTMLElement>('.pane-input')
+    const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+    if (pane && pane.scrollHeight > pane.clientHeight && getComputedStyle(pane).position === 'sticky') {
+      const top = el.getBoundingClientRect().top - pane.getBoundingClientRect().top + pane.scrollTop - pane.clientHeight / 2
+      pane.scrollTo({ top, behavior })
+    } else el.scrollIntoView({ block: 'center', behavior })
+    flash(el.closest('.field, .decoder') ?? el)
+  }
+
+  // Entrata della pagina, una sola volta.
+  const appRef = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => intro(appRef.current), [])
+
+  // Lo stato resta nell'indirizzo: un tag decodificato si condivide con un link.
+  useEffect(() => {
+    const timer = setTimeout(() => writeUrlState({ mode, encoder, decodeText, params, scheme, open }), 300)
+    return () => clearTimeout(timer)
+  }, [mode, encoder, decodeText, params, scheme, open])
+
+  // Incolla in qualsiasi punto della pagina: si decodifica. "/" porta al campo di input.
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      if (isEditable(e.target)) return
+      const text = e.clipboardData?.getData('text')?.trim()
+      if (!text) return
+      e.preventDefault()
+      setMode('decode')
+      setDecodeText(text)
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey || isEditable(e.target)) return
+      e.preventDefault()
+      ;(mode === 'decode' ? document.getElementById('decode-input') : document.querySelector<HTMLElement>('.key-fields input'))?.focus()
+    }
+    document.addEventListener('paste', onPaste)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('paste', onPaste)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [mode])
 
   const openInEncoder = () => {
     if (!analysis?.key) return
@@ -139,6 +199,13 @@ export default function App() {
     setMode('encode')
   }
 
+  const toggle = (id: Tab) => setOpen((o) => (o.includes(id) ? o.filter((x) => x !== id) : [...o, id]))
+  /** Apre una sezione (es. dal riepilogo) e ci porta la pagina. */
+  const reveal = (id: Tab) => {
+    setOpen((o) => (o.includes(id) ? o : [...o, id]))
+    requestAnimationFrame(() => document.getElementById(`sec-${id}`)?.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }))
+  }
+
   const loadInDecoder = (text: string) => {
     setDecodeText(text)
     setMode('decode')
@@ -146,26 +213,23 @@ export default function App() {
   }
 
   return (
-    <div className="app">
-      <header className="header">
-        <div className="logo-btn">
-          <a href={import.meta.env.BASE_URL} title={t('Ricomincia da capo')} aria-label={t('GS1 Italy: ricarica la pagina')}>
-            <img src={logo} alt="GS1 Italy" width={56} height={38} />
-          </a>
-          <span className="app-name">
-            Encoder · Decoder
-            <br />
-            GS1
-          </span>
-        </div>
+    <div className="app" ref={appRef}>
+      <header className="topbar">
+        <a className="brand" href={import.meta.env.BASE_URL} title={t('Ricomincia da capo')}>
+          <img src={logo} alt="GS1 Italy" width={46} height={31} />
+          <span className="brand-name">{t('EPC Encoder / Decoder')}</span>
+        </a>
+        <ModeSwitch mode={mode} setMode={setMode} />
+        <p className="topbar-hint">
+          {t('Incolla un EPC ovunque per decodificarlo')} <kbd>Ctrl</kbd>+<kbd>V</kbd>
+        </p>
         <LangSwitch />
       </header>
 
-      <main>
-        <div className="top-grid">
+      <div className="workbench">
+        <aside className="pane-input">
           <InputPanel
             mode={mode}
-            setMode={setMode}
             encoder={encoder}
             setEncoder={setEncoder}
             decodeText={decodeText}
@@ -177,107 +241,115 @@ export default function App() {
             setScheme={setScheme}
             onOpenInEncoder={openInEncoder}
           />
+        </aside>
 
-          <div className="side" ref={heroRef}>
-            {hasData && analysis ? (
-              <Summary analysis={analysis} busy={busy} vbg={vbgState} onTab={(t) => setTab(t as Tab)} />
-            ) : (
-              <section className="card hero">
-                <div className="hero-copy">
-                  <h1>
-                    {t('Un EPC, *tutte* le sue forme.')
-                      .split('*')
-                      .map((part, i) => (i === 1 ? <em key={i}>{part}</em> : part))}
-                  </h1>
-                  <p>
-                    {mode === 'encode'
-                      ? t('L’EPC identifica un singolo oggetto con una chiave GS1, qui un GTIN con il suo numero di serie. La stessa chiave si scrive come URI, in binario nel tag RFID, come GS1 Digital Link o in un barcode: inserisci la tua e guarda ogni passaggio.')
-                      : t('Incolla l’EPC letto da un tag, un link o i dati di un barcode: l’app riconosce il formato e ricostruisce tutte le altre rappresentazioni.')}
-                  </p>
+        <main className="pane-results" id="results">
+          {hasData && analysis ? (
+            <>
+              <Readout analysis={analysis} scheme={active} busy={busy} vbg={vbgState} issues={issues} onAction={onAction} onTab={(x) => reveal(x as Tab)} />
+              {analysis.gs1 && (
+                <div className="sections">
+                  <h2 className="sections-title">{t('Dettagli')}</h2>
+                  {SECTIONS.map(({ id, label, icon: Icon, tone }) => (
+                    <Section key={id} id={id} tone={tone} icon={<Icon size={18} />} title={label} summary={summaryOf(id, analysis, active, vbgState)} open={open.includes(id)} onToggle={() => toggle(id)}>
+                      {id === 'journey' && <Journey analysis={analysis} scheme={active} onScheme={setScheme} />}
+                      {id === 'rfid' && <TagMemory analysis={analysis} scheme={active} onScheme={setScheme} />}
+                      {id === 'barcode' && <Carriers data={analysis.gs1!} />}
+                      {id === 'formats' && <Formats analysis={analysis} onDecode={loadInDecoder} />}
+                      {id === 'vbg' && <VbgCard ai={primary?.ai} state={vbgState} />}
+                    </Section>
+                  ))}
                 </div>
-                <HeroEpc />
-              </section>
-            )}
-          </div>
-        </div>
-
-        {analysis?.gs1 && hasData && (
-          <>
-            <Pipeline analysis={analysis} scheme={active} vbg={vbgState} tab={tab} onTab={(t) => setTab(t as Tab)} />
-            <section className="results card">
-              <div className="tabs" role="tablist">
-                {TABS.map(({ id, label, icon: Icon }) => (
-                  <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? 'tab active' : 'tab'} onClick={() => setTab(id)}>
-                    <Icon size={17} />
-                    <span>{label}</span>
-                  </button>
-                ))}
-              </div>
-              <div className="tab-body">
-                {tab === 'journey' && <Journey analysis={analysis} scheme={active} onScheme={setScheme} />}
-                {tab === 'rfid' && <TagMemory analysis={analysis} scheme={active} onScheme={setScheme} />}
-                {tab === 'barcode' && <Carriers data={analysis.gs1} />}
-                {tab === 'formats' && <Formats analysis={analysis} onDecode={loadInDecoder} />}
-                {tab === 'vbg' && <VbgCard ai={primary?.ai} state={vbgState} />}
-              </div>
-            </section>
-          </>
-        )}
-      </main>
+              )}
+            </>
+          ) : (
+            <StartPanel mode={mode} onSample={loadInDecoder} onExample={() => setEncoder(withExample(encoder))} />
+          )}
+        </main>
+      </div>
 
       <footer className="footer">
-        <div className="footer-top">
-          <img className="footer-logo" src={logo} alt="GS1 Italy" width={70} height={48} />
-          <p className="footer-claim">The Global Language of Business</p>
+        <div className="footer-row">
+          <img src={logo} alt="GS1 Italy" width={46} height={31} />
+          <p>{t('Strumento dimostrativo: per l’uso in produzione fanno fede gli standard GS1.')}</p>
+          <a className="footer-site" href="https://gs1it.org" target="_blank" rel="noreferrer">
+            {t('Vai al sito di GS1 Italy')} <ArrowUpRight size={15} />
+          </a>
         </div>
-        <div className="footer-cols">
-          <div>
-            <h3>{t('Standard di riferimento')}</h3>
-            <ul>
-              {STANDARDS.map((l) => (
-                <li key={l.href}>
-                  <a href={l.href} target="_blank" rel="noreferrer">
-                    {l.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
+        <details className="footer-more">
+          <summary>
+            {t('Standard, servizi e strumenti GS1')} <ChevronDown size={15} />
+          </summary>
+          <div className="footer-cols">
+            <LinkList title={t('Standard di riferimento')} links={STANDARDS} />
+            <LinkList title={t('Servizi GS1 Italy')} links={SERVICES} />
+            <LinkList title={t('Strumenti GS1')} links={ENGINES} />
           </div>
-          <div>
-            <h3>{t('Servizi GS1 Italy')}</h3>
-            <ul>
-              {SERVICES.map((l) => (
-                <li key={l.href}>
-                  <a href={l.href} target="_blank" rel="noreferrer">
-                    {l.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h3>{t('Strumenti GS1')}</h3>
-            <ul>
-              {ENGINES.map((l) => (
-                <li key={l.href}>
-                  <a href={l.href} target="_blank" rel="noreferrer">
-                    {l.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
+        </details>
         <address className="footer-address">
-          {t('Strumento dimostrativo: per l’uso in produzione fanno fede gli standard GS1.')}
-          <br />
-          GS1 Italy · Via Paleocapa 7, 20121 {t('Milano')}
+          © {new Date().getFullYear()} GS1 Italy · Via Paleocapa 7, 20121 {t('Milano')}
         </address>
-        <p className="footer-copy">© {new Date().getFullYear()} GS1 Italy</p>
-        <a className="footer-site" href="https://gs1it.org" target="_blank" rel="noreferrer">
-          {t('Vai al sito di GS1 Italy')} <ArrowUpRight size={17} />
-        </a>
       </footer>
+    </div>
+  )
+}
+
+function ModeSwitch({ mode, setMode }: { mode: Mode; setMode: (m: Mode) => void }) {
+  return (
+    <div className="mode-switch" role="radiogroup" aria-label={t('Modalità')} data-mode={mode}>
+      <span className="mode-thumb" aria-hidden />
+      <button type="button" role="radio" aria-checked={mode === 'encode'} onClick={() => setMode('encode')}>
+        <PenLine size={15} /> {t('Codifica')}
+      </button>
+      <button type="button" role="radio" aria-checked={mode === 'decode'} onClick={() => setMode('decode')}>
+        <ScanLine size={15} /> {t('Decodifica')}
+      </button>
+    </div>
+  )
+}
+
+/** Riassunto di una riga di ogni sezione, visibile anche a sezione chiusa. */
+function summaryOf(id: Tab, analysis: Analysis, scheme: string | null, vbg?: Verification | 'loading'): string {
+  const r = analysis.results.find((x) => x.scheme === scheme)
+  const ok = r?.ok ? r : null
+  switch (id) {
+    case 'journey':
+      return analysis.gs1?.elementString ?? ''
+    case 'rfid': {
+      if (!ok) return analysis.rfidNote ?? t('Nessun EPC')
+      const bank = epcBank(ok.bits)
+      return t('{bits} bit nel banco EPC · CRC {crc}h · PC {pc}h', { bits: bank.words.length * 16, crc: hexWord(bank.crc), pc: hexWord(bank.pc.bits) })
+    }
+    case 'barcode':
+      return t('{n} simboli: {names}…', { n: CARRIERS.length, names: CARRIERS.slice(0, 3).map((c) => c.name).join(', ') })
+    case 'formats':
+      return t('{ok} schemi EPC su {total} codificabili', { ok: analysis.results.filter((x) => x.ok).length, total: analysis.results.length })
+    case 'vbg':
+      return !vbg
+        ? t('Non disponibile per questa chiave')
+        : vbg === 'loading'
+          ? t('Verifica in corso…')
+          : vbg.state === 'verified'
+            ? (vbg.name ?? t('Verificato'))
+            : vbg.state === 'licensed'
+              ? (vbg.licensee?.name ?? t('Licenza trovata'))
+              : (vbg.message ?? t('Non disponibile'))
+  }
+}
+
+function LinkList({ title, links }: { title: string; links: { label: string; href: string }[] }) {
+  return (
+    <div>
+      <h3>{title}</h3>
+      <ul>
+        {links.map((l) => (
+          <li key={l.href}>
+            <a href={l.href} target="_blank" rel="noreferrer">
+              {l.label}
+            </a>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

@@ -1,20 +1,18 @@
-import { useRef } from 'react'
-import { Plus, Trash2, Wand2, ArrowRightLeft, ScanLine, PenLine, Sparkles, BadgeCheck, Loader2 } from 'lucide-react'
+import { Hash, Plus, Trash2, Wand2, ArrowRightLeft, Play, BadgeCheck, Loader2, X } from 'lucide-react'
 import type { Mode } from '../App'
 import { prefixDigits, type Analysis, type Params } from '../gs1/analyze'
 import { KEY_TYPES, SCHEMES_BY_FAMILY, familyOf, filterOptions, keyType, kindOf, type Ai } from '../gs1/schemes'
 import { aiLabel } from '../gs1/aiDictionary'
 import { computeCheckDigit, isCheckDigitValid } from '../gs1/checkDigit'
 import { SchemeSelect } from './EpcParts'
+import { KeyDataIcon, ReaderIcon, RfidTagIcon } from './Art'
 import { Dropdown } from './Dropdown'
-import { useMotion } from '../motion'
 import { t } from '../i18n'
 
 export type EncoderState = { keyId: string; values: Record<string, string>; extras: Ai[] }
 
 type Props = {
   mode: Mode
-  setMode: (m: Mode) => void
   encoder: EncoderState
   setEncoder: (e: EncoderState) => void
   decodeText: string
@@ -48,35 +46,27 @@ const EXAMPLE_EXTRAS: Ai[] = [
   { ai: '10', value: 'LOT42' },
 ]
 
-const DECODE_SAMPLES: { label: string; text: string }[] = [
-  { label: 'SGTIN-96 (hex)', text: '3035E8480000004000003039' },
-  { get label() { return t('SGTIN-96 (binario)') }, text: '0011 0000 0011 0101 1110 1000 0100 1000 0000 0000 0000 0000 0000 0000 0100 0000 0000 0000 0000 0000 0011 0000 0011 1001' },
-  { get label() { return t('SGTIN+ con lotto e scadenza') }, text: 'F790800000000001905181C883296727C6C2E6F3E000' },
-  { get label() { return t('SGTIN++ con dominio') }, text: 'FD90800000000001905181CC6CFCD8E9E9704194B393E3617379F000' },
-  { label: 'EPC Tag URI', text: 'urn:epc:tag:sscc-96:0.8000000.3000000001' },
-  { label: 'GS1 Digital Link', text: 'https://id.gs1.org/01/08000000000019/10/LOT42/21/ABC123?17=271231' },
-  { label: 'Element string', text: '(01)08000000000019(17)271231(10)LOT42(21)12345' },
-]
+/** Lo stato dell'encoder con i dati d'esempio della chiave scelta. */
+export function withExample(e: EncoderState): EncoderState {
+  const key = keyType(e.keyId)!
+  return { ...e, values: Object.fromEntries(key.example.map((a) => [a.ai, a.value])), extras: key.id === 'sgtin' ? EXAMPLE_EXTRAS : [] }
+}
 
 export function InputPanel(p: Props) {
-  const { mode, setMode, encoder, setEncoder, params, setParams, analysis } = p
-  const scope = useRef<HTMLElement>(null)
+  const { mode, encoder, setEncoder, params, setParams, analysis } = p
   const key = keyType(encoder.keyId)!
   const family = mode === 'decode' ? (analysis?.key?.id ?? null) : key.id
   const schemes = family ? SCHEMES_BY_FAMILY[family] : []
   const kind = p.scheme ? kindOf(p.scheme) : null
-
-  useMotion(scope, (m) => {
-    m.from('.ga-in', { y: 14, opacity: 0 }, { duration: 0.45, stagger: 0.06 })
-  }, [mode, encoder.keyId])
 
   const setValue = (ai: string, value: string) => setEncoder({ ...encoder, values: { ...encoder.values, [ai]: value } })
   const chooseKey = (id: string) => {
     setEncoder({ keyId: id, values: {}, extras: [] })
     setParams({ ...params, filter: id === 'sgtin' ? 1 : 0, gcpLength: null })
   }
-  const useExample = () =>
-    setEncoder({ ...encoder, values: Object.fromEntries(key.example.map((a) => [a.ai, a.value])), extras: key.id === 'sgtin' ? EXAMPLE_EXTRAS : [] })
+  const useExample = () => setEncoder(withExample(encoder))
+  // Un campo obbligatorio vuoto si segnala solo quando l'utente ha già iniziato a inserire i dati.
+  const started = key.fields.some((f) => (encoder.values[f.ai] ?? '').trim()) || encoder.extras.some((x) => x.value.trim())
   const setExtra = (i: number, patch: Partial<Ai>) => setEncoder({ ...encoder, extras: encoder.extras.map((x, k) => (k === i ? { ...x, ...patch } : x)) })
   const addExtra = () => {
     const next = EXTRA_AIS.find((x) => !encoder.extras.some((e) => e.ai === x.ai) && !key.fields.some((f) => f.ai === x.ai))
@@ -84,33 +74,29 @@ export function InputPanel(p: Props) {
   }
 
   return (
-    <section className="card input-panel" ref={scope}>
-      <div className="mode-switch" role="tablist">
-        <button role="tab" aria-selected={mode === 'encode'} className={mode === 'encode' ? 'active' : ''} onClick={() => setMode('encode')}>
-          <PenLine size={18} /> {t('Codifica')}
-        </button>
-        <button role="tab" aria-selected={mode === 'decode'} className={mode === 'decode' ? 'active' : ''} onClick={() => setMode('decode')}>
-          <ScanLine size={18} /> {t('Decodifica')}
-        </button>
-      </div>
-
+    <section className="input-panel" aria-label={mode === 'encode' ? t('Dati da codificare') : t('Dato da decodificare')}>
       {mode === 'encode' ? (
         <div className="encoder">
-          <div className="field-group ga-in">
+          <div className="field-group">
             <label className="group-label" htmlFor="key-type">
-              <span className="step-dot">1</span> {t('Che cosa vuoi identificare?')}
+              <span className="tile tile-xs tile-blue" aria-hidden>
+                <KeyDataIcon size={15} />
+              </span>
+              {t('Che cosa vuoi identificare?')}
             </label>
             <Dropdown id="key-type" value={encoder.keyId} onChange={chooseKey} options={KEY_TYPES.map((k) => ({ value: k.id, label: k.name, detail: k.description, aside: <span className="kind kind-legacy">{k.short}</span> }))} />
-            <p className="key-desc">{key.description}</p>
           </div>
 
-          <div className="field-group ga-in">
+          <div className="field-group">
             <div className="group-row">
               <span className="group-label">
-                <span className="step-dot">2</span> {t('I dati della chiave')}
+                <span className="tile tile-xs tile-blue" aria-hidden>
+                  <Hash size={15} />
+                </span>
+                {t('I dati della chiave')}
               </span>
-              <button className="text-btn" onClick={useExample}>
-                <Sparkles size={14} /> {t('Usa un esempio')}
+              <button type="button" className="text-btn" onClick={useExample}>
+                <Play size={13} /> {t('Usa un esempio')}
               </button>
             </div>
             <div className="key-fields">
@@ -121,13 +107,14 @@ export function InputPanel(p: Props) {
                 const cdOk = f.checkDigitLength && /^\d+$/.test(cdPart) && cdPart.length === f.checkDigitLength && value.length >= (f.ai === '01' ? 8 : f.checkDigitLength) ? isCheckDigitValid(cdPart) : undefined
                 const canComplete = f.checkDigitLength && /^\d+$/.test(value) && (f.ai === '01' ? [7, 11, 12, 13].includes(value.length) : value.length === f.checkDigitLength - 1)
                 return (
-                  <label className="field" key={f.ai}>
+                  <label className={`field ${!value && !f.optional && started ? 'missing' : ''}`} key={f.ai}>
                     <span className="field-label">
                       <span className="ai-tag">AI {f.ai}</span> {f.label}
                       {f.optional && <em> · {t('facoltativo')}</em>}
+                      {!value && !f.optional && started && <span className="req-tag">{t('obbligatorio')}</span>}
                     </span>
                     <div className="input-row">
-                      <input className="mono" value={value} placeholder={f.placeholder} spellCheck={false} autoComplete="off" onChange={(e) => setValue(f.ai, e.target.value.trim())} />
+                      <input id={`ai-${f.ai}`} className="mono" aria-invalid={cdOk === false || undefined} value={value} placeholder={f.placeholder} spellCheck={false} autoComplete="off" onChange={(e) => setValue(f.ai, e.target.value.trim())} />
                       {canComplete && (
                         <button type="button" className="ghost small" onClick={() => setValue(f.ai, value + computeCheckDigit(f.ai === '01' ? value.padStart(13, '0') : value))} title={t('Aggiunge la cifra di controllo GS1')}>
                           <Wand2 size={15} /> {t('Cifra di controllo')}
@@ -143,11 +130,13 @@ export function InputPanel(p: Props) {
             </div>
           </div>
 
-          <div className="field-group ga-in">
+          <div className="field-group">
             <span className="group-label">
-              <span className="step-dot">3</span> {t('Dati aggiuntivi')} <span className="muted">{t('facoltativi')}</span>
+              <span className="tile tile-xs tile-blue" aria-hidden>
+                <Plus size={15} />
+              </span>
+              {t('Dati aggiuntivi')} <span className="muted">{t('facoltativi')}</span>
             </span>
-            <p className="key-desc tight">{t('Lotto, scadenza e altri AI: entrano negli schemi + e ++, nei barcode 2D e nel GS1 Digital Link.')}</p>
             <div className="extras">
               {encoder.extras.map((x, i) => (
                 <div className="extra" key={i}>
@@ -171,27 +160,28 @@ export function InputPanel(p: Props) {
           </div>
         </div>
       ) : (
-        <div className="decoder ga-in">
+        <div className="decoder">
           <label className="group-label" htmlFor="decode-input">
+            <span className="tile tile-xs tile-teal" aria-hidden>
+              <ReaderIcon size={15} />
+            </span>
             {t('Incolla qualsiasi rappresentazione GS1')}
           </label>
           <textarea
             id="decode-input"
             className="mono"
+            aria-invalid={Boolean(analysis?.error) || undefined}
             rows={3}
             value={p.decodeText}
             spellCheck={false}
             placeholder={t('EPC letto dal tag in esadecimale o binario, urn:epc:…, https://id.gs1.org/01/…, (01)…(21)…, dati del lettore o un GTIN')}
             onChange={(e) => p.setDecodeText(e.target.value)}
           />
-          <div className="samples">
-            <span className="muted small">{t('Prova:')}</span>
-            {DECODE_SAMPLES.map((s) => (
-              <button key={s.label} className="chip" onClick={() => p.setDecodeText(s.text)}>
-                {s.label}
-              </button>
-            ))}
-          </div>
+          {p.decodeText && (
+            <button type="button" className="text-btn clear-btn" onClick={() => p.setDecodeText('')}>
+              <X size={14} /> {t('Svuota')}
+            </button>
+          )}
           {analysis?.detected && (
             <div className="detected">
               <span className="pill ok">{t('Riconosciuto: {what}', { what: analysis.detected })}</span>
@@ -206,20 +196,22 @@ export function InputPanel(p: Props) {
       )}
 
       {schemes.length > 0 && (
-        <div className="field-group tag-params ga-in">
+        <div className="field-group tag-params">
           <label className="group-label" htmlFor="tag-type">
-            {mode === 'encode' && <span className="step-dot">4</span>} {t('Il tag RFID')}
+            <span className="tile tile-xs tile-teal" aria-hidden>
+              <RfidTagIcon size={15} />
+            </span>
+            {t('Il tag RFID')}
           </label>
           <span className="field-label">{t('Tipo di tag (schema EPC)')}</span>
-          <SchemeSelect id="tag-type" schemes={schemes} results={analysis?.results ?? []} scheme={p.scheme} onScheme={p.setScheme} />
+          <SchemeSelect id="tag-type" quiet schemes={schemes} results={analysis?.results ?? []} scheme={p.scheme} onScheme={p.setScheme} />
           <div className="params">
             <label className="field">
               <span className="field-label">Filter value</span>
               <Dropdown ariaLabel="Filter value" value={String(params.filter)} onChange={(v) => setParams({ ...params, filter: Number(v) })} options={filterOptions(familyOf(family!)).map((o) => ({ value: String(o.value), label: o.label }))} />
-              <span className="hint">{t('Aiuta i lettori a selezionare solo certi tag.')}</span>
             </label>
             {kind === 'legacy' && (
-              <div className="field">
+              <div className={`field ${!analysis?.gcp.length && !analysis?.gcp.pending && !params.gcpLength ? 'needs' : ''}`}>
                 <span className="field-label">GS1 Company Prefix</span>
                 <GcpField analysis={analysis} params={params} setParams={setParams} />
               </div>
@@ -267,6 +259,7 @@ function GcpField({ analysis, params, setParams }: { analysis: Analysis | null; 
   return (
     <>
       <Dropdown
+        id="gcp-length"
         ariaLabel={t('Lunghezza del GS1 Company Prefix')}
         value={params.gcpLength ? String(params.gcpLength) : ''}
         placeholder={t('Scegli la lunghezza…')}

@@ -51,8 +51,7 @@ export function TagContents({ analysis, result }: { analysis: Analysis; result: 
   useMotion(
     scope,
     (m) => {
-      m.from('.tc-item', { y: 8, opacity: 0 }, { duration: 0.3, stagger: 0.05 })
-      m.from('.tc-item.out .tc-strike', { scaleX: 0, origin: '0% 50%' }, { duration: 0.4, stagger: 0.08, at: 0.25, ease: 'inOut' })
+      m.from('.tc-item.out .tc-strike', { scaleX: 0, origin: '0% 50%' }, { duration: 0.4, stagger: 0.08, at: 0.1, ease: 'inOut' })
     },
     [ok?.scheme, ok?.hex],
   )

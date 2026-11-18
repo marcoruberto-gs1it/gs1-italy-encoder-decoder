@@ -4,12 +4,14 @@ import { CheckCircle2, XCircle } from 'lucide-react'
 import { Dropdown } from './Dropdown'
 import type { SchemeResult, Segment } from '../gs1/epc'
 import { KIND_INFO, kindOf } from '../gs1/schemes'
-import { segmentColors } from '../colors'
+import { segmentColors, inkOn } from '../colors'
 import { t } from '../i18n'
 
 /** Menu a tendina del tipo di tag (schema EPC), con lo stato di ciascuno. */
-export function SchemeSelect({ schemes, results, scheme, onScheme, id }: { schemes: string[]; results: SchemeResult[]; scheme: string | null; onScheme: (s: string) => void; id?: string }) {
+export function SchemeSelect({ schemes, results, scheme, onScheme, id, quiet }: { schemes: string[]; results: SchemeResult[]; scheme: string | null; onScheme: (s: string) => void; id?: string; quiet?: boolean }) {
   const current = results.find((r) => r.scheme === scheme)
+  // In versione essenziale la spiegazione compare solo quando lo schema non si può usare.
+  const showStatus = scheme && (!quiet || (current && !current.ok))
   return (
     <div className="scheme-select">
       <Dropdown
@@ -33,7 +35,7 @@ export function SchemeSelect({ schemes, results, scheme, onScheme, id }: { schem
           }
         })}
       />
-      {scheme && (
+      {showStatus && (
         <p className={`scheme-status ${current && !current.ok ? 'bad' : ''}`}>
           {current && !current.ok ? <XCircle size={15} /> : <CheckCircle2 size={15} />}
           <span className={`kind kind-${kindOf(scheme)}`}>{KIND_INFO[kindOf(scheme)].label}</span>
@@ -55,8 +57,7 @@ export function BitMap({ result }: { result: Extract<SchemeResult, { ok: true }>
   useMotion(
     scope,
     (m) => {
-      const bar = m.from('.bitbar-seg', { scaleX: 0, origin: '0% 50%' }, { duration: 0.45, stagger: 0.07 })
-      m.from('.seg-card', { y: 16, opacity: 0 }, { duration: 0.4, stagger: 0.05, at: bar - 0.35 })
+      m.from('.bitbar-seg', { scaleX: 0, origin: '0% 50%' }, { duration: 0.45, stagger: 0.07 })
     },
     [result.scheme, result.hex],
   )
@@ -68,7 +69,7 @@ export function BitMap({ result }: { result: Extract<SchemeResult, { ok: true }>
           <div
             key={i}
             className={`bitbar-seg ${hover === i ? 'hl' : ''} ${s.kind === 'padding' ? 'pad' : ''}`}
-            style={{ flexGrow: s.bits.length, background: colors[i] }}
+            style={{ flexGrow: s.bits.length, background: colors[i], color: inkOn(colors[i]) }}
             onMouseEnter={() => setHover(i)}
             onMouseLeave={() => setHover(null)}
             title={`${s.label}: ${s.bits.length} bit`}

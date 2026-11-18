@@ -2,22 +2,35 @@ import { useState, type ReactNode } from 'react'
 import { Binary, Check, Copy } from 'lucide-react'
 import { t } from '../i18n'
 
-export function CopyButton({ value, label, icon }: { value: string; label?: string; icon?: 'bin' }) {
+type CopyProps = {
+  /** Testo da copiare, o funzione che lo calcola al clic (es. l'indirizzo corrente). */
+  value: string | (() => string)
+  label?: string
+  icon?: 'bin' | ReactNode
+  /** Testo visibile accanto all'icona: il pulsante diventa un pulsante con etichetta. */
+  text?: string
+}
+
+export function CopyButton({ value, label, icon, text }: CopyProps) {
   const [done, setDone] = useState(false)
   label ??= t('Copia')
+  const glyph = done ? <Check size={15} /> : icon === 'bin' ? <Binary size={15} /> : (icon ?? <Copy size={15} />)
   return (
     <button
-      className="icon-btn"
+      type="button"
+      className={`${text ? 'copy-btn' : 'icon-btn'} ${done ? 'done' : ''}`}
       aria-label={label}
       title={label}
       onClick={() => {
-        void navigator.clipboard?.writeText(value).then(() => {
+        const v = typeof value === 'function' ? value() : value
+        void navigator.clipboard?.writeText(v).then(() => {
           setDone(true)
-          setTimeout(() => setDone(false), 1200)
+          setTimeout(() => setDone(false), 1400)
         })
       }}
     >
-      {done ? <Check size={16} /> : icon === 'bin' ? <Binary size={16} /> : <Copy size={16} />}
+      {glyph}
+      {text && <span>{done ? t('Copiato') : text}</span>}
     </button>
   )
 }
