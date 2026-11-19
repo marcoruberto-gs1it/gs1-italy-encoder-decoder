@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Alert, AlertTitle } from '@/components/ui/misc'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
+import { ConceptIcon, keyIcon } from '@/icons'
 import type { ReactNode } from 'react'
 import { DigitalLinkIcon, KeyDataIcon, RfidTagIcon } from './Art'
 import type { Analysis } from '../gs1/analyze'
@@ -60,7 +61,10 @@ export function Readout({ analysis, scheme, busy, vbg, issues, onTab, onAction }
                 {warn ? <AlertTriangle className="size-4!" /> : <LottieIcon name="check" size={17} replay={ok?.hex ?? gs1?.elementString} className="lottie-current" fallback={<CheckCircle2 className="size-4!" />} />}
                 {warn ? t('Da verificare') : t('Valido')}
               </Badge>
-              <h2 className="text-[15px] font-medium text-muted-foreground">{analysis.key ? analysis.key.name : t('Dati GS1 validi')}</h2>
+              <h2 className="flex items-center gap-2 text-[15px] font-bold text-primary">
+                <ConceptIcon icon={keyIcon(analysis.key?.id)} size="xs" />
+                {analysis.key ? analysis.key.name : t('Dati GS1 validi')}
+              </h2>
               {busy && <Loader2 size={16} className="spin text-muted-foreground" aria-label={t('Calcolo in corso')} />}
             </div>
             <div className="ro-actions flex gap-1.5 phone:w-full phone:*:flex-1">
@@ -125,14 +129,14 @@ function Stat({ icon, tile, label, value, note, tone, onClick }: { icon: ReactNo
       </span>
       <span className="flex min-w-0 flex-col gap-0.5">
         <dt className="text-[13px] text-muted-foreground">{label}</dt>
-        <dd className={cn('text-lg leading-tight font-semibold tracking-tight', tone === 'ok' && 'text-success', tone === 'warn' && 'text-warning', tone === 'bad' && 'text-destructive')}>{value}</dd>
+        <dd className={cn('text-[17px] leading-tight font-bold tracking-tight text-primary', tone === 'ok' && 'text-success', tone === 'warn' && 'text-warning', tone === 'bad' && 'text-destructive')}>{value}</dd>
         {note && <dd className="line-clamp-2 text-xs text-muted-foreground">{note}</dd>}
       </span>
     </>
   )
   const cls = 'flex min-w-0 items-start gap-3 rounded-lg p-2.5 text-left'
   return onClick ? (
-    <button type="button" className={cn(cls, 'group relative cursor-pointer pr-6 transition-colors outline-none hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50')} onClick={onClick}>
+    <button type="button" className={cn(cls, 'group relative cursor-pointer transition-colors outline-none hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50')} onClick={onClick}>
       {body}
       <ChevronRight className="absolute top-3 right-1.5 size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" aria-hidden />
     </button>

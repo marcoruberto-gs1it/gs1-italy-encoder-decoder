@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMotion } from '../motion'
-import { Download } from 'lucide-react'
+import { Barcode, Download } from 'lucide-react'
+import { CARRIER_ICONS, ConceptIcon } from '@/icons'
 import { Button } from '@/components/ui/button'
 import { CARRIERS, loadBwip, renderCarrier } from '../gs1/barcodes'
 import type { Gs1Data } from '../gs1/syntax'
@@ -48,7 +49,10 @@ export function Carriers({ data }: { data: Gs1Data }) {
         {rendered.map(({ c, r }) => (
           <article key={c.id} className={`carrier ${!r || 'error' in r ? 'off' : ''}`}>
             <header>
-              <strong>{c.name}</strong>
+              <strong className="flex items-center gap-2 font-bold text-primary">
+                <ConceptIcon icon={CARRIER_ICONS[c.id]?.[0] ?? Barcode} tone={CARRIER_ICONS[c.id]?.[1]} size="xs" />
+                {c.name}
+              </strong>
               <span className="mono sym-id" title={t('Identificatore di simbologia trasmesso dal lettore')}>
                 {c.symbologyId}
               </span>

@@ -12,6 +12,8 @@ export type DropdownOption = {
   detail?: string
   /** Elemento a destra (es. tipo di schema o numero di bit). */
   aside?: ReactNode
+  /** Icona del concetto (riquadro colorato, vedi src/icons.tsx), anche nel campo chiuso. */
+  icon?: ReactNode
   /** Opzione mostrata ma segnalata come non utilizzabile (resta selezionabile per vederne il motivo). */
   muted?: boolean
 }
@@ -47,11 +49,12 @@ export function Dropdown({ id, value, options, onChange, placeholder, display, a
           aria-expanded={open}
           aria-label={ariaLabel}
           className={cn(
-            'dd-trigger flex h-10 w-full min-w-0 cursor-pointer items-center gap-2 rounded-md border border-input bg-background px-3 text-left text-sm shadow-xs transition-[color,box-shadow,border-color] outline-none hover:border-ring/40 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/25 data-[state=open]:border-ring data-[state=open]:ring-[3px] data-[state=open]:ring-ring/25',
+            'dd-trigger flex h-11 w-full min-w-0 cursor-pointer items-center gap-2 rounded-xl border border-input bg-card px-3.5 text-left text-sm shadow-xs transition-[color,box-shadow,border-color] outline-none hover:border-ring/40 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/25 data-[state=open]:border-ring data-[state=open]:ring-[3px] data-[state=open]:ring-ring/25',
             className,
           )}
         >
-          <span className={cn('min-w-0 flex-1 truncate', !selected && !display && 'text-muted-foreground')}>{display ?? selected?.label ?? placeholder ?? t('Seleziona…')}</span>
+          {selected?.icon && !display && <span className="-ml-1.5 flex shrink-0 [&_.tile]:size-7 [&_.tile]:rounded-md">{selected.icon}</span>}
+          <span className={cn('min-w-0 flex-1 truncate font-medium', !selected && !display && 'font-normal text-muted-foreground')}>{display ?? selected?.label ?? placeholder ?? t('Seleziona…')}</span>
           {selected?.aside && !display && <span className="shrink-0">{selected.aside}</span>}
           <ChevronsUpDown className="size-4 shrink-0 opacity-50" aria-hidden />
         </button>
@@ -72,12 +75,13 @@ export function Dropdown({ id, value, options, onChange, placeholder, display, a
                   }}
                   data-checked={o.value === value || undefined}
                 >
-                  <Check className={cn('mt-0.5 size-4 text-primary', o.value === value ? 'opacity-100' : 'opacity-0')} aria-hidden />
-                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <span className={cn('font-medium', o.muted && 'text-muted-foreground line-through decoration-muted-foreground/40')}>{o.label}</span>
+                  {o.icon && <span className="flex shrink-0">{o.icon}</span>}
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5 self-center">
+                    <span className={cn('font-semibold text-foreground', o.muted && 'text-muted-foreground line-through decoration-muted-foreground/40')}>{o.label}</span>
                     {o.detail && <span className="text-xs text-muted-foreground">{o.detail}</span>}
                   </span>
-                  {o.aside && <span className="shrink-0">{o.aside}</span>}
+                  {o.aside && <span className="shrink-0 self-center">{o.aside}</span>}
+                  <Check className={cn('size-4 shrink-0 self-center text-primary', o.value === value ? 'opacity-100' : 'opacity-0')} aria-hidden />
                 </CommandItem>
               ))}
             </CommandGroup>

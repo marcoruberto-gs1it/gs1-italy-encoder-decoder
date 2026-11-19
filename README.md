@@ -77,7 +77,7 @@ I motori GS1, i font e le librerie sono open source, tranne GSAP: è gratuito an
 | shadcn/ui (componenti copiati in `src/components/ui`), Radix UI, cmdk, Tailwind CSS, tailwind-merge, clsx, tw-animate-css | MIT |
 | class-variance-authority | Apache 2.0 |
 | GSAP (animazioni) | [Licenza standard GSAP](https://gsap.com/standard-license), gratuita |
-| IBM Plex Sans e IBM Plex Mono (font, serviti dal sito con Fontsource) | SIL Open Font License 1.1 |
+| Montserrat e IBM Plex Mono (font, serviti dal sito con Fontsource) | SIL Open Font License 1.1 |
 | Strumenti di sviluppo (Vite, Vitest, TypeScript, …) | MIT, Apache 2.0, ISC, MPL 2.0, BSD |
 
 Le animazioni usano GSAP (in `src/motion.ts`) e CSS. Il logo GS1 Italy è un marchio di GS1 Italy e non è coperto dalla licenza del codice.

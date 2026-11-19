@@ -1,4 +1,4 @@
-import { BadgeCheck, Building2, ExternalLink, Info, Loader2, ShieldAlert } from 'lucide-react'
+import { BadgeCheck, Building2, Clock, ExternalLink, Globe, Hash, Info, Landmark, Link2, Loader2, MapPin, Package, Shapes, ShieldAlert, Tag, Weight, type LucideIcon } from 'lucide-react'
 import type { Verification } from '../gs1/vbg'
 import { t } from '../i18n'
 import { Alert, AlertTitle } from '@/components/ui/misc'
@@ -53,23 +53,23 @@ export function VbgCard({ ai, state }: { ai?: string; state?: Verification | 'lo
       <div className="vbg-body">
         {state.image && <img className="vbg-img" src={state.image} alt="" loading="lazy" referrerPolicy="no-referrer" crossOrigin="anonymous" />}
         <dl>
-          {state.name && <Row k={ai === '414' ? t('Località') : t('Prodotto')} v={state.name} />}
-          {state.brand && <Row k={t('Marchio')} v={state.brand} />}
-          {state.netContent && <Row k={t('Contenuto netto')} v={state.netContent} />}
-          {state.category && <Row k={t('Categoria GPC')} v={state.category} />}
-          {state.countries && <Row k={t('Paesi di vendita')} v={state.countries} />}
-          {state.updated && <Row k={t('Aggiornato')} v={state.updated} />}
+          {state.name && <Row icon={ai === '414' ? MapPin : Package} k={ai === '414' ? t('Località') : t('Prodotto')} v={state.name} />}
+          {state.brand && <Row icon={Tag} k={t('Marchio')} v={state.brand} />}
+          {state.netContent && <Row icon={Weight} k={t('Contenuto netto')} v={state.netContent} />}
+          {state.category && <Row icon={Shapes} k={t('Categoria GPC')} v={state.category} />}
+          {state.countries && <Row icon={Globe} k={t('Paesi di vendita')} v={state.countries} />}
+          {state.updated && <Row icon={Clock} k={t('Aggiornato')} v={state.updated} />}
         </dl>
       </div>
       {l && (
         <div className="vbg-licensee">
           <Building2 size={18} />
           <dl>
-            <Row k={t('Titolare')} v={l.name} />
-            {l.prefix && <Row k="GS1 Company Prefix" v={t('{prefix} ({n} cifre: usato per gli schemi TDS 1.x)', { prefix: l.prefix, n: l.prefix.length })} />}
-            {l.mo && <Row k={t('Rilasciato da')} v={l.mo} />}
-            {l.address && <Row k={t('Indirizzo')} v={l.address} />}
-            {l.website && <Row k={t('Sito')} v={l.website} />}
+            <Row icon={Building2} k={t('Titolare')} v={l.name} />
+            {l.prefix && <Row icon={Hash} k="GS1 Company Prefix" v={t('{prefix} ({n} cifre: usato per gli schemi TDS 1.x)', { prefix: l.prefix, n: l.prefix.length })} />}
+            {l.mo && <Row icon={Landmark} k={t('Rilasciato da')} v={l.mo} />}
+            {l.address && <Row icon={MapPin} k={t('Indirizzo')} v={l.address} />}
+            {l.website && <Row icon={Link2} k={t('Sito')} v={l.website} />}
           </dl>
         </div>
       )}
@@ -86,9 +86,12 @@ export function VbgCard({ ai, state }: { ai?: string; state?: Verification | 'lo
   )
 }
 
-const Row = ({ k, v }: { k: string; v: string }) => (
+const Row = ({ icon: Icon, k, v }: { icon: LucideIcon; k: string; v: string }) => (
   <>
-    <dt>{k}</dt>
-    <dd>{v}</dd>
+    <dt className="flex items-center gap-1.5">
+      <Icon size={14} className="shrink-0 opacity-70" aria-hidden />
+      {k}
+    </dt>
+    <dd className="font-semibold text-foreground">{v}</dd>
   </>
 )

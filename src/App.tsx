@@ -341,10 +341,10 @@ export default function App() {
 function ModeSwitch({ mode, setMode }: { mode: Mode; setMode: (m: Mode) => void }) {
   return (
     <ToggleGroup type="single" value={mode} onValueChange={(v) => v && setMode(v as Mode)} aria-label={t('Modalità')} className="mode-switch">
-      <ToggleGroupItem value="encode" className="h-9 px-4">
+      <ToggleGroupItem value="encode" className="h-9 px-4 phone:px-3 phone:[&_svg]:hidden">
         <PenLine /> {t('Codifica')}
       </ToggleGroupItem>
-      <ToggleGroupItem value="decode" className="h-9 px-4">
+      <ToggleGroupItem value="decode" className="h-9 px-4 phone:px-3 phone:[&_svg]:hidden">
         <ScanLine /> {t('Decodifica')}
       </ToggleGroupItem>
     </ToggleGroup>

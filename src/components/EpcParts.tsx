@@ -6,6 +6,7 @@ import type { SchemeResult, Segment } from '../gs1/epc'
 import { KIND_INFO, kindOf } from '../gs1/schemes'
 import { segmentColors, inkOn } from '../colors'
 import { t } from '../i18n'
+import { ConceptIcon, KIND_ICONS, NotApplicable } from '@/icons'
 
 /** Menu a tendina del tipo di tag (schema EPC), con lo stato di ciascuno. */
 export function SchemeSelect({ schemes, results, scheme, onScheme, id, quiet }: { schemes: string[]; results: SchemeResult[]; scheme: string | null; onScheme: (s: string) => void; id?: string; quiet?: boolean }) {
@@ -31,6 +32,7 @@ export function SchemeSelect({ schemes, results, scheme, onScheme, id, quiet }: 
                   ? `${r.length} bit${r.dropped.length ? ` · ${t('senza {ais}', { ais: r.dropped.map((a) => `(${a.ai})`).join(' ') })}` : ''}${kind === 'plusplus' ? ` · ${t('con dominio')}` : ''}`
                   : undefined,
             muted: Boolean(r && !r.ok),
+            icon: r && !r.ok ? <ConceptIcon icon={NotApplicable} tone="red" /> : <ConceptIcon icon={KIND_ICONS[kind][0]} tone={KIND_ICONS[kind][1]} />,
             aside: <span className={`kind kind-${kind}`}>{KIND_INFO[kind].label}</span>,
           }
         })}

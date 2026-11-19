@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { ClipboardPaste, Layers, Play } from 'lucide-react'
+import { Barcode, Binary, Braces, ClipboardPaste, Layers, Link2, MemoryStick, Nfc, Parentheses, Play, ScanBarcode, type LucideIcon } from 'lucide-react'
+import { Rich } from './Rich'
 import { Section, Sections } from './Section'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -32,10 +33,21 @@ export function StartPanel({ mode, onSample, onExample }: Props) {
       <section className="start">
         <div className="start-hero stage">
           <header className="start-head">
-            <h1>{t('Decodifica un EPC o un dato GS1')}</h1>
+            <h1>
+              {t('Decodifica un EPC')} <em>{t('o un dato GS1')}</em>
+            </h1>
             <p>
-              {t('Incolla il dato nel campo a sinistra, oppure premi Ctrl+V in qualsiasi punto della pagina: il formato viene riconosciuto da solo.')}
+              <Rich text={t('Incolla il dato nel campo a sinistra, oppure premi **Ctrl+V** in qualsiasi punto della pagina: il formato viene **riconosciuto da solo**.')} />
             </p>
+            <Chips
+              items={[
+                [Binary, t('EPC esadecimale o binario')],
+                [Braces, 'EPC URI'],
+                [Link2, 'GS1 Digital Link'],
+                [Parentheses, 'Element string'],
+                [ScanBarcode, t('Dati del lettore')],
+              ]}
+            />
           </header>
           <TagStage mode="read" fallback={<DecodeArt />} />
         </div>
@@ -78,7 +90,9 @@ export function StartPanel({ mode, onSample, onExample }: Props) {
         </div>
         <p className="start-tip">
           <ClipboardPaste size={16} />
-          {t('Accetta anche i dati trasmessi da un lettore di barcode, con FNC1 e separatori GS, e un GTIN da solo.')}
+          <span>
+            <Rich text={t('Accetta anche i **dati trasmessi da un lettore di barcode**, con FNC1 e separatori GS, e un **GTIN da solo**.')} />
+          </span>
         </p>
       </section>
     )
@@ -87,10 +101,20 @@ export function StartPanel({ mode, onSample, onExample }: Props) {
     <section className="start">
       <div className="start-hero stage">
         <header className="start-head">
-          <h1>{t('Codifica una chiave GS1 in EPC')}</h1>
+          <h1>
+            {t('Codifica una chiave GS1')} <em>{t('in EPC')}</em>
+          </h1>
           <p>
-            {t('Scegli la chiave e inserisci i dati a sinistra: ottieni l’EPC per ogni schema del TDS 2.3, la memoria del tag, i barcode e il GS1 Digital Link.')}
+            <Rich text={t('Scegli la chiave e inserisci i dati a sinistra: ottieni **l’EPC per ogni schema del TDS 2.3**, la memoria del tag, i barcode e il GS1 Digital Link.')} />
           </p>
+          <Chips
+            items={[
+              [Nfc, t('EPC RAIN RFID')],
+              [MemoryStick, t('Memoria del tag')],
+              [Barcode, t('Barcode e QR')],
+              [Link2, 'GS1 Digital Link'],
+            ]}
+          />
           <Button variant="brand" size="lg" className="self-start" onClick={onExample}>
             <Play /> {t('Carica un esempio')}
           </Button>
@@ -103,5 +127,19 @@ export function StartPanel({ mode, onSample, onExample }: Props) {
         </Section>
       </Sections>
     </section>
+  )
+}
+
+/** Concetti dell'app sul palco blu: icona + nome, solo informativi. */
+function Chips({ items }: { items: [LucideIcon, string][] }) {
+  return (
+    <ul className="flex flex-wrap gap-2" aria-label={t('Cosa trovi')}>
+      {items.map(([Icon, label]) => (
+        <li key={label} className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-[12.5px] font-semibold text-white ring-1 ring-white/15 ring-inset">
+          <Icon size={15} className="text-[#7fdcda]" aria-hidden />
+          {label}
+        </li>
+      ))}
+    </ul>
   )
 }

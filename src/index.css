@@ -18,40 +18,47 @@
  * Blu GS1 per struttura e azioni principali, arancione GS1 solo come accento.
  */
 :root {
-  --ui-radius: 0.625rem;
-  --ui-background: #ffffff;
-  --ui-foreground: #1f2933;
+  /* Stile di gs1-italy-vbg-app: fondo azzurro-grigio, schede bianche arrotondate, inchiostro blu notte. */
+  --ui-radius: 0.75rem;
+  --ui-background: #e3e9f3;
+  --ui-foreground: #0f2147;
   --ui-card: #ffffff;
-  --ui-card-foreground: #1f2933;
+  --ui-card-foreground: #0f2147;
   --ui-popover: #ffffff;
-  --ui-popover-foreground: #1f2933;
+  --ui-popover-foreground: #0f2147;
   --ui-primary: #002c6c;
   --ui-primary-foreground: #ffffff;
-  --ui-secondary: #eef2f8;
+  --ui-secondary: #e8edf5;
   --ui-secondary-foreground: #002c6c;
-  --ui-muted: #f4f6f9;
-  --ui-muted-foreground: #5f6670;
-  --ui-accent: #e6edf7;
+  --ui-muted: #f2f5fa;
+  --ui-muted-foreground: #5f6f8a;
+  --ui-accent: #e8edf5;
   --ui-accent-foreground: #002c6c;
   --ui-destructive: #c8102e;
-  --ui-border: #e2e6eb;
-  --ui-input: #d3d9e0;
+  --ui-border: #dfe6f0;
+  --ui-input: #cfd8e6;
   --ui-ring: #1a4f9c;
   --ui-brand: #f26334;
-  --ui-brand-foreground: #002c6c;
+  --ui-brand-foreground: #ffffff;
   --ui-success: #007a35;
   --ui-warning: #9a3412;
 }
 
 @theme inline {
-  --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-sans: 'Montserrat', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Consolas, monospace;
 
   --radius-sm: calc(var(--ui-radius) - 4px);
   --radius-md: calc(var(--ui-radius) - 2px);
   --radius-lg: var(--ui-radius);
   --radius-xl: calc(var(--ui-radius) + 4px);
-  --radius-2xl: calc(var(--ui-radius) + 8px);
+  --radius-2xl: calc(var(--ui-radius) + 6px);
+  --radius-3xl: 24px;
+
+  /* Ombre morbide bluastre di gs1-italy-vbg-app. */
+  --shadow-card: 0 1px 2px rgba(0, 44, 108, 0.04), 0 4px 14px -6px rgba(0, 44, 108, 0.14);
+  --shadow-lift: 0 2px 4px rgba(0, 44, 108, 0.05), 0 18px 36px -18px rgba(0, 44, 108, 0.3);
+  --shadow-cta: 0 12px 24px -12px rgba(242, 99, 52, 0.75);
 
   --color-background: var(--ui-background);
   --color-foreground: var(--ui-foreground);

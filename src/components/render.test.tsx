@@ -93,7 +93,7 @@ test('in inglese l’interfaccia e i campi del tag sono tradotti', async () => {
     expect(html).toContain('Partition')
     expect(html).toContain('Expiration date')
     expect(html).not.toContain('Partizione')
-    expect(renderToString(<App />)).toContain('Encode a GS1 key as an EPC')
+    expect(renderToString(<App />)).toContain('Encode a GS1 key')
   } finally {
     _setLangForTest('it')
   }
