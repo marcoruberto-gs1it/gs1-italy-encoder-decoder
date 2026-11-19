@@ -58,7 +58,7 @@ function encoderAis(e: EncoderState): Ai[] {
   const k = keyType(e.keyId)!
   const key = k.fields.map((f) => {
     let value = (e.values[f.ai] ?? '').trim()
-    if (f.ai === '01' && /^\d{8,13}$/.test(value)) value = value.padStart(14, '0')
+    if (f.ai === '01' && /^(?:\d{8}|\d{12,13})$/.test(value)) value = value.padStart(14, '0')
     return { ai: f.ai, value }
   })
   return [...key, ...e.extras.map((x) => ({ ai: x.ai.trim(), value: x.value.trim() }))].filter((a) => a.ai && a.value)
@@ -80,6 +80,8 @@ export default function App() {
   const [params, setParams] = useState<Params>({ filter: 1, hostname: 'id.gs1.org', gcpLength: null, ...initial.params })
   const [analysis, setAnalysis] = useState<Analysis | null>(null)
   const [busy, setBusy] = useState(false)
+  const [loadError, setLoadError] = useState(false)
+  const [retry, setRetry] = useState(0)
   const [open, setOpen] = useState<Tab[]>(initial.open)
   const [scheme, setScheme] = useState<string | null>(initial.scheme)
   const [vbg, setVbg] = useState<{ id: string; result: Verification | null } | null>(null)
@@ -97,16 +99,25 @@ export default function App() {
     setBusy(true)
     const timer = setTimeout(async () => {
       const vbgGcp = { prefix: vbgPrefix, pending: vbgPending }
-      const a = mode === 'encode' ? await analyzeEncode(ais, params, vbgGcp) : await analyzeDecode(decodeText, params, vbgGcp)
-      if (!alive) return
-      setAnalysis(a)
-      setBusy(false)
+      try {
+        const a = mode === 'encode' ? await analyzeEncode(ais, params, vbgGcp) : await analyzeDecode(decodeText, params, vbgGcp)
+        if (!alive) return
+        setAnalysis(a)
+        setLoadError(false)
+      } catch (e) {
+        // Motori non caricati (rete) o errore imprevisto: lo si dice e si offre di riprovare.
+        if (!alive) return
+        console.error(e)
+        setLoadError(true)
+      } finally {
+        if (alive) setBusy(false)
+      }
     }, 180)
     return () => {
       alive = false
       clearTimeout(timer)
     }
-  }, [mode, ais, decodeText, params, vbgPrefix, vbgPending, language])
+  }, [mode, ais, decodeText, params, vbgPrefix, vbgPending, language, retry])
 
   // Verified by GS1 per la chiave primaria (fornisce anche la lunghezza del GS1 Company Prefix).
   useEffect(() => {
@@ -136,12 +147,13 @@ export default function App() {
     const k = keyType(encoder.keyId)!
     const started = k.fields.some((f) => (encoder.values[f.ai] ?? '').trim()) || encoder.extras.some((x) => x.value.trim())
     return started ? k.fields.filter((f) => !f.optional && !(encoder.values[f.ai] ?? '').trim()).map((f) => ({ ai: f.ai, label: f.label })) : []
-  }, [mode, encoder])
+    // Le etichette sono getter tradotti: cambiano con la lingua.
+  }, [mode, encoder, language])
   const issues = useMemo(() => (analysis ? issuesOf(analysis, active, mode, missing) : []), [analysis, active, mode, missing])
 
   const onAction = (a: IssueAction) => {
     if ('scheme' in a) return setScheme(a.scheme)
-    const el = document.getElementById(a.focus)
+    const el = document.getElementById(a.focus) ?? (a.focus.startsWith('ai-') ? document.querySelector<HTMLElement>('.key-fields input') : null)
     if (!el) return
     el.focus({ preventScroll: true })
     // Sui monitor larghi la colonna dei dati scorre da sola: si porta il campo al centro di quella, non della pagina.
@@ -195,7 +207,8 @@ export default function App() {
       values: Object.fromEntries(k.fields.map((f) => [f.ai, analysis.ais.find((a) => a.ai === f.ai)?.value ?? ''])),
       extras: analysis.ais.filter((a) => !k.fields.some((f) => f.ai === a.ai)),
     })
-    setParams((p) => ({ ...p, filter: analysis.params.filter, hostname: analysis.params.hostname }))
+    setParams((p) => ({ ...p, filter: analysis.params.filter, hostname: analysis.params.hostname, gcpLength: analysis.gcp.source === 'tag' ? analysis.gcp.length : p.gcpLength }))
+    if (analysis.sourceScheme) setScheme(analysis.sourceScheme)
     setMode('encode')
   }
 
@@ -243,7 +256,15 @@ export default function App() {
           />
         </aside>
 
-        <main className="pane-results" id="results">
+        <main className="pane-results" id="results" aria-busy={busy}>
+          {loadError && (
+            <div className="load-error" role="alert">
+              <p>{t('Non è stato possibile caricare i motori GS1. Controlla la connessione e riprova.')}</p>
+              <button type="button" className="ghost small" onClick={() => setRetry((n) => n + 1)}>
+                {t('Riprova')}
+              </button>
+            </div>
+          )}
           {hasData && analysis ? (
             <>
               <Readout analysis={analysis} scheme={active} busy={busy} vbg={vbgState} issues={issues} onAction={onAction} onTab={(x) => reveal(x as Tab)} />

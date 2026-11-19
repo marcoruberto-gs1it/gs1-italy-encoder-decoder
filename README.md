@@ -38,13 +38,22 @@ Il token Verified by GS1 resta lato server: il browser chiama `/api/vbg` e il pr
 | `src/gs1/vbg.ts` | Client Verified by GS1 (da gs1-italy-vbg-app) |
 | `src/issues.ts` | Segnalazioni (errori, dati mancanti, dati fuori dal tag) con l'azione che risolve ciascuna |
 | `src/urlState.ts` | Stato nell'indirizzo della pagina, per condividere una codifica o una decodifica con un link |
-| `src/motion.ts` | Animazioni con GSAP: è l'unico file che lo importa |
+| `src/motion.ts` | Animazioni con GSAP: è l'unico file che lo importa (anche la timeline della scena 3D passa da qui) |
+| `src/three/tagScene.ts` | Tag RAIN RFID in 3D della schermata iniziale (three.js), caricato solo lì; se WebGL manca resta l'illustrazione SVG |
+| `src/anim/lottieData.ts`, `src/components/LottieIcon.tsx` | Icone animate Lottie (esito, errore, copia, lettura in corso), generate nel codice con i colori GS1; player `lottie_light`, senza `eval` |
 
 Ogni codifica viene riletta con lo stesso motore: se lo schema non restituisce esattamente i dati di partenza (per esempio un seriale con zeri iniziali in SGTIN-96) lo schema è segnalato come non utilizzabile, con il motivo.
 
 ### Correzione al motore TDT
 
 Nella versione pubblicata di `TDTtranslator.js`, decodificando un EPC `++` i dati +AIDC che seguono l'hostname venivano scartati. La copia in `src/vendor/tdt` li decodifica come negli schemi `+`; il test `src/gs1/epc.test.ts` verifica l'andata e ritorno di SGTIN++ e DSGTIN++ con lotto e scadenza.
+
+## Sicurezza
+
+- **Content-Security-Policy** nella pagina pubblicata (plugin in `vite.config.ts`): script e stili solo dal sito, nessun `unsafe-inline` né `eval` (`wasm-unsafe-eval` solo per la Syntax Engine), connessioni solo verso il Worker di Verified by GS1. Font e librerie sono serviti dal sito: nessuna richiesta a terzi all'apertura.
+- **Verified by GS1**: il token resta lato server. Il proxy di sviluppo inoltra solo `POST` agli endpoint usati dall'app e rifiuta le richieste da altri siti; il Worker di produzione deve applicare le stesse regole (endpoint, `Origin`, limiti di frequenza). I link e le immagini della risposta, scelti dal titolare della licenza, sono accettati solo se `https:`/`http:` e ogni link mostra il dominio di destinazione.
+- **Link condivisi**: i parametri dell'indirizzo hanno limiti di lunghezza e numero; il dominio del Digital Link accetta solo caratteri da hostname.
+- **CI**: GitHub Actions fissate allo SHA del commit, permessi minimi per job (il build non può pubblicare), `npm audit` prima del build, Dependabot settimanale.
 
 ## Esempi
 
@@ -60,9 +69,11 @@ I motori GS1, i font e le librerie sono open source, tranne GSAP: è gratuito an
 | GS1 Barcode Syntax Engine | Apache 2.0 (`src/vendor/gs1/syntax-engine/LICENSE`) |
 | React, React DOM | MIT |
 | bwip-js (simboli) | MIT |
+| three.js (tag 3D) | MIT |
+| lottie-web (icone animate) | MIT |
 | lucide-react (icone) | ISC |
 | GSAP (animazioni) | [Licenza standard GSAP](https://gsap.com/standard-license), gratuita |
-| IBM Plex Sans e IBM Plex Mono (font, da Google Fonts) | SIL Open Font License 1.1 |
+| IBM Plex Sans e IBM Plex Mono (font, serviti dal sito con Fontsource) | SIL Open Font License 1.1 |
 | Strumenti di sviluppo (Vite, Vitest, TypeScript, …) | MIT, Apache 2.0, ISC, MPL 2.0, BSD |
 
 Le animazioni usano GSAP (in `src/motion.ts`) e CSS. Il logo GS1 Italy è un marchio di GS1 Italy e non è coperto dalla licenza del codice.

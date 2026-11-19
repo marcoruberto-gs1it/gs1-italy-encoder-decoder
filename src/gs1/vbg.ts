@@ -19,7 +19,8 @@ export type Verification = {
   countries?: string
   updated?: string
   licensee?: Licensee
-  links: { label: string; href: string }[]
+  /** host: il sito di destinazione, mostrato accanto al titolo scelto dal titolare. */
+  links: { label: string; href: string; host: string }[]
   message?: string
 }
 
@@ -106,27 +107,43 @@ function licensee(l?: RawLicence): Licensee | undefined {
     prefix: l.licenceKey,
     mo: l.licensingMO?.moName,
     gln: l.licenseeGLN,
-    website: l.contactPoint?.find((c) => c.website)?.website,
+    website: l.contactPoint?.find((c) => c.website)?.website?.slice(0, 200),
     address: address(l.address),
     status: l.licenceStatus ?? l.status,
   }
 }
 
+/** Solo indirizzi web: i dati arrivano dal titolare della licenza, non da GS1. */
+export function safeUrl(href: unknown): string | undefined {
+  if (typeof href !== 'string' || href.length > 2048) return undefined
+  try {
+    const u = new URL(href)
+    return u.protocol === 'https:' || u.protocol === 'http:' ? u.href : undefined
+  } catch {
+    return undefined
+  }
+}
+
+const own = (o: Record<string, string>, key: unknown) => (typeof key === 'string' && Object.hasOwn(o, key) ? o[key] : undefined)
+
 function links(linkset?: RawRecord['linkset']) {
   const ctx = linkset?.[0]
   if (!ctx) return []
-  const out: { label: string; href: string }[] = []
+  const out: { label: string; href: string; host: string }[] = []
   for (const targets of Object.values(ctx)) {
     if (!Array.isArray(targets) || !targets.length) continue
     const best = targets.find((x) => x.hreflang?.some((l) => l.toLowerCase().startsWith(lang()))) ?? targets[0]
-    out.push({ label: best.title, href: best.href })
+    const href = safeUrl(best?.href)
+    if (!href) continue
+    const host = new URL(href).hostname
+    out.push({ label: typeof best.title === 'string' && best.title.trim() ? best.title.slice(0, 120) : host, href, host })
   }
   return out.slice(0, 6)
 }
 
 function map(r: RawRecord): Verification {
   const issue = r.validationErrors?.[0]?.errors?.[0]
-  if (r.code === 5 || issue) return { state: 'invalid', links: [], message: issue && ERRORS[issue.errorCode] ? t(ERRORS[issue.errorCode]) : (issue?.message ?? t('Il codice non è valido.')) }
+  if (r.code === 5 || issue) return { state: 'invalid', links: [], message: own(ERRORS, issue?.errorCode) ? t(own(ERRORS, issue?.errorCode)!) : (issue?.message ?? t('Il codice non è valido.')) }
   const name = pick(r.productDescription) ?? pick(r.glnRecords?.[0]?.organizationName)
   const lic = licensee(r.gs1Licence)
   if (!name || r.glnRecords) return { state: 'licensed', licensee: lic, links: links(r.linkset), name: r.glnRecords ? name : undefined }
@@ -135,8 +152,8 @@ function map(r: RawRecord): Verification {
     complete: r.isComplete,
     name,
     brand: pick(r.brandName),
-    image: pick(r.productImageUrl),
-    netContent: r.netContent?.map((n) => `${Number(n.value).toLocaleString(locale())} ${UNITS[n.unitCode] ?? n.unitCode}`).join(' · '),
+    image: safeUrl(pick(r.productImageUrl)),
+    netContent: r.netContent?.map((n) => `${Number(n.value).toLocaleString(locale())} ${own(UNITS, n.unitCode) ?? n.unitCode}`).join(' · '),
     category: r.gpcCategoryCode,
     countries: r.countryOfSaleCode?.map((c) => (c.alpha2 ? country(c.alpha2) : c.numeric)).join(', '),
     updated: r.dateUpdated ? new Date(r.dateUpdated).toLocaleDateString(locale(), { day: 'numeric', month: 'long', year: 'numeric' }) : undefined,

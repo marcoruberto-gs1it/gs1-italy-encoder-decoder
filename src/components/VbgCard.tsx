@@ -1,6 +1,7 @@
 import { BadgeCheck, Building2, ExternalLink, Loader2, ShieldAlert } from 'lucide-react'
 import type { Verification } from '../gs1/vbg'
 import { t } from '../i18n'
+import { LottieIcon } from './LottieIcon'
 
 /** Scheda Verified by GS1 della chiave primaria. */
 export function VbgCard({ ai, state }: { ai?: string; state?: Verification | 'loading' }) {
@@ -8,7 +9,7 @@ export function VbgCard({ ai, state }: { ai?: string; state?: Verification | 'lo
   if (state === 'loading')
     return (
       <div className="note">
-        <Loader2 size={16} className="spin" /> {t('Verifica nel registro Verified by GS1…')}
+        <LottieIcon name="scan" size={22} loop className="lottie-current" fallback={<Loader2 size={16} className="spin" />} /> {t('Verifica nel registro Verified by GS1…')}
       </div>
     )
   if (state.state === 'error' || state.state === 'invalid')
@@ -39,7 +40,7 @@ export function VbgCard({ ai, state }: { ai?: string; state?: Verification | 'lo
         </div>
       </div>
       <div className="vbg-body">
-        {state.image && <img className="vbg-img" src={state.image} alt="" loading="lazy" />}
+        {state.image && <img className="vbg-img" src={state.image} alt="" loading="lazy" referrerPolicy="no-referrer" crossOrigin="anonymous" />}
         <dl>
           {state.name && <Row k={ai === '414' ? t('Località') : t('Prodotto')} v={state.name} />}
           {state.brand && <Row k={t('Marchio')} v={state.brand} />}
@@ -64,8 +65,8 @@ export function VbgCard({ ai, state }: { ai?: string; state?: Verification | 'lo
       {state.links.length > 0 && (
         <div className="vbg-links">
           {state.links.map((x) => (
-            <a key={x.href} href={x.href} target="_blank" rel="noreferrer">
-              <ExternalLink size={14} /> {x.label}
+            <a key={x.href} href={x.href} target="_blank" rel="noopener noreferrer">
+              <ExternalLink size={14} /> {x.label} <span className="muted small">{x.host}</span>
             </a>
           ))}
         </div>

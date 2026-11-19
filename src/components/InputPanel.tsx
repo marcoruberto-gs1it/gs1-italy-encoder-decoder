@@ -8,6 +8,7 @@ import { SchemeSelect } from './EpcParts'
 import { KeyDataIcon, ReaderIcon, RfidTagIcon } from './Art'
 import { Dropdown } from './Dropdown'
 import { t } from '../i18n'
+import { LottieIcon } from './LottieIcon'
 
 export type EncoderState = { keyId: string; values: Record<string, string>; extras: Ai[] }
 
@@ -58,6 +59,9 @@ export function InputPanel(p: Props) {
   const family = mode === 'decode' ? (analysis?.key?.id ?? null) : key.id
   const schemes = family ? SCHEMES_BY_FAMILY[family] : []
   const kind = p.scheme ? kindOf(p.scheme) : null
+  // Nel decoder filter e dominio letti dal tag prevalgono: si mostrano bloccati.
+  const fromTag = mode === 'decode' ? analysis?.fromTag : undefined
+  const tagFilter = fromTag?.filter && analysis ? analysis.params.filter : null
 
   const setValue = (ai: string, value: string) => setEncoder({ ...encoder, values: { ...encoder.values, [ai]: value } })
   const chooseKey = (id: string) => {
@@ -104,7 +108,8 @@ export function InputPanel(p: Props) {
                 const value = encoder.values[f.ai] ?? ''
                 const digits = f.ai === '01' ? value.padStart(14, '0') : value
                 const cdPart = f.checkDigitLength ? digits.slice(0, f.checkDigitLength) : ''
-                const cdOk = f.checkDigitLength && /^\d+$/.test(cdPart) && cdPart.length === f.checkDigitLength && value.length >= (f.ai === '01' ? 8 : f.checkDigitLength) ? isCheckDigitValid(cdPart) : undefined
+                const lengthOk = f.ai === '01' ? [8, 12, 13, 14].includes(value.length) : value.length >= (f.checkDigitLength ?? 0)
+                const cdOk = f.checkDigitLength && /^\d+$/.test(cdPart) && cdPart.length === f.checkDigitLength && lengthOk ? isCheckDigitValid(cdPart) : undefined
                 const canComplete = f.checkDigitLength && /^\d+$/.test(value) && (f.ai === '01' ? [7, 11, 12, 13].includes(value.length) : value.length === f.checkDigitLength - 1)
                 return (
                   <label className={`field ${!value && !f.optional && started ? 'missing' : ''}`} key={f.ai}>
@@ -146,14 +151,14 @@ export function InputPanel(p: Props) {
                     onChange={(v) => setExtra(i, { ai: v === 'altro' ? '' : v })}
                     options={[...EXTRA_AIS.map((e) => ({ value: e.ai, label: aiLabel(e.ai), aside: <span className="ai-tag">AI {e.ai}</span> })), { value: 'altro', label: t('Altro AI…'), detail: t('Scrivi il numero dell’AI') }]}
                   />
-                  {!EXTRA_AIS.some((e) => e.ai === x.ai) && <input className="mono ai-input" value={x.ai} placeholder="AI" onChange={(e) => setExtra(i, { ai: e.target.value.replace(/\D/g, '') })} />}
-                  <input className="mono" value={x.value} placeholder={EXTRA_AIS.find((e) => e.ai === x.ai)?.placeholder ?? 'valore'} onChange={(e) => setExtra(i, { value: e.target.value })} />
-                  <button className="icon-btn soft" aria-label={t('Rimuovi')} onClick={() => setEncoder({ ...encoder, extras: encoder.extras.filter((_, k) => k !== i) })}>
+                  {!EXTRA_AIS.some((e) => e.ai === x.ai) && <input className="mono ai-input" aria-label="Application Identifier" inputMode="numeric" maxLength={4} value={x.ai} placeholder="AI" onChange={(e) => setExtra(i, { ai: e.target.value.replace(/\D/g, '') })} />}
+                  <input id={`ai-${x.ai}`} className="mono" aria-label={aiLabel(x.ai) || x.ai} value={x.value} placeholder={EXTRA_AIS.find((e) => e.ai === x.ai)?.placeholder ?? 'valore'} onChange={(e) => setExtra(i, { value: e.target.value })} />
+                  <button type="button" className="icon-btn soft" aria-label={t('Rimuovi')} onClick={() => setEncoder({ ...encoder, extras: encoder.extras.filter((_, k) => k !== i) })}>
                     <Trash2 size={16} />
                   </button>
                 </div>
               ))}
-              <button className="ghost small" onClick={addExtra}>
+              <button type="button" className="ghost small" onClick={addExtra}>
                 <Plus size={15} /> {t('Aggiungi un AI')}
               </button>
             </div>
@@ -186,7 +191,7 @@ export function InputPanel(p: Props) {
             <div className="detected">
               <span className="pill ok">{t('Riconosciuto: {what}', { what: analysis.detected })}</span>
               {analysis.key && (
-                <button className="text-btn" onClick={p.onOpenInEncoder}>
+                <button type="button" className="text-btn" onClick={p.onOpenInEncoder}>
                   <ArrowRightLeft size={14} /> {t('Modifica nell’encoder')}
                 </button>
               )}
@@ -208,7 +213,16 @@ export function InputPanel(p: Props) {
           <div className="params">
             <label className="field">
               <span className="field-label">Filter value</span>
-              <Dropdown ariaLabel="Filter value" value={String(params.filter)} onChange={(v) => setParams({ ...params, filter: Number(v) })} options={filterOptions(familyOf(family!)).map((o) => ({ value: String(o.value), label: o.label }))} />
+              {tagFilter !== null ? (
+                <>
+                  <div className="locked-value">
+                    <BadgeCheck size={17} /> <span>{filterOptions(familyOf(family!)).find((o) => o.value === tagFilter)?.label ?? tagFilter}</span>
+                  </div>
+                  <span className="hint ok">{t('Letto dal tag.')}</span>
+                </>
+              ) : (
+                <Dropdown ariaLabel="Filter value" value={String(params.filter)} onChange={(v) => setParams({ ...params, filter: Number(v) })} options={filterOptions(familyOf(family!)).map((o) => ({ value: String(o.value), label: o.label }))} />
+              )}
             </label>
             {kind === 'legacy' && (
               <div className={`field ${!analysis?.gcp.length && !analysis?.gcp.pending && !params.gcpLength ? 'needs' : ''}`}>
@@ -219,8 +233,8 @@ export function InputPanel(p: Props) {
             {kind === 'plusplus' && (
               <label className="field">
                 <span className="field-label">{t('Dominio del GS1 Digital Link')}</span>
-                <input className="mono" value={params.hostname} placeholder="id.gs1.org" onChange={(e) => setParams({ ...params, hostname: e.target.value.trim().replace(/^https?:\/\//, '').replace(/\/.*$/, '') })} />
-                <span className="hint">{t('Scritto compresso nel tag: il tag ricostruisce il link del brand.')}</span>
+                <input className="mono" value={fromTag?.hostname && analysis ? analysis.params.hostname : params.hostname} readOnly={fromTag?.hostname} maxLength={253} placeholder="id.gs1.org" onChange={(e) => setParams({ ...params, hostname: e.target.value.trim().replace(/^https?:\/\//, '').replace(/\/.*$/, '') })} />
+                <span className="hint">{fromTag?.hostname ? t('Letto dal tag.') : t('Scritto compresso nel tag: il tag ricostruisce il link del brand.')}</span>
               </label>
             )}
           </div>
@@ -250,7 +264,7 @@ function GcpField({ analysis, params, setParams }: { analysis: Analysis | null; 
     return (
       <>
         <div className="locked-value">
-          <Loader2 size={17} className="spin" /> {t('Verifica su Verified by GS1…')}
+          <LottieIcon name="scan" size={22} loop className="lottie-current" fallback={<Loader2 size={17} className="spin" />} /> {t('Verifica su Verified by GS1…')}
         </div>
         <span className="hint">{t('La lunghezza arriva dalla licenza del titolare.')}</span>
       </>

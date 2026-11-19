@@ -17,27 +17,32 @@ export type UrlState = { mode: Mode; encoder: EncoderState; decodeText: string; 
 
 const OWN = /^(mode|q|k|s|f|h|g|t|[ax]\d{2,4})$/
 const DEFAULT_HOST = 'id.gs1.org'
+/** Limiti per un link ricevuto da altri: nessun dato GS1 reale li supera. */
+export const LIMITS = { text: 2000, value: 90, extras: 30, host: 253, scheme: 16 }
 
 export function parseUrlState(search: string, empty: EncoderState): Omit<UrlState, 'params'> & { params: Partial<Params> } {
   const q = new URLSearchParams(search)
   const params: Partial<Params> = {}
   const f = Number(q.get('f'))
   if (q.has('f') && Number.isInteger(f) && f >= 0 && f <= 7) params.filter = f
-  if (q.get('h')) params.hostname = q.get('h')!
+  const h = q.get('h')
+  if (h && h.length <= LIMITS.host && /^[A-Za-z0-9.-]+$/.test(h)) params.hostname = h
   const g = Number(q.get('g'))
   if (Number.isInteger(g) && g >= 6 && g <= 12) params.gcpLength = g
 
   const encoder: EncoderState = { ...empty, values: {}, extras: [] }
   const k = q.get('k')
   if (k && keyType(k)) encoder.keyId = k
-  for (const [name, value] of q) {
+  for (const [name, raw] of q) {
+    const value = raw.slice(0, LIMITS.value)
     if (/^a\d{2,4}$/.test(name)) encoder.values[name.slice(1)] = value
-    else if (/^x\d{2,4}$/.test(name)) encoder.extras.push({ ai: name.slice(1), value })
+    else if (/^x\d{2,4}$/.test(name) && encoder.extras.length < LIMITS.extras) encoder.extras.push({ ai: name.slice(1), value })
   }
-  const decodeText = q.get('q') ?? ''
+  const decodeText = (q.get('q') ?? '').slice(0, LIMITS.text)
   const mode: Mode = q.get('mode') === 'decode' || (decodeText && !k) ? 'decode' : 'encode'
   const open = TABS.filter((x) => (q.get('t') ?? '').split(',').includes(x))
-  return { mode, encoder, decodeText, params, scheme: q.get('s'), open }
+  const s = q.get('s')
+  return { mode, encoder, decodeText, params, scheme: s && s.length <= LIMITS.scheme ? s : null, open }
 }
 
 export function buildUrlState(s: UrlState, search: string): string {

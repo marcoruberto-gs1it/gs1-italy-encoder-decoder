@@ -4,6 +4,7 @@ import { Section } from './Section'
 import { DecodeArt, DigitalLinkIcon, EncodeArt, KeyDataIcon, RfidTagIcon } from './Art'
 import type { Mode } from '../App'
 import { HeroEpc } from './HeroEpc'
+import { TagStage } from './TagStage'
 import { t } from '../i18n'
 
 /** Formati che il decoder riconosce, con un esempio reale per ciascuno. */
@@ -27,14 +28,14 @@ export function StartPanel({ mode, onSample, onExample }: Props) {
   if (mode === 'decode') {
     return (
       <section className="start">
-        <div className="start-hero">
+        <div className="start-hero stage">
           <header className="start-head">
             <h1>{t('Decodifica un EPC o un dato GS1')}</h1>
             <p>
               {t('Incolla il dato nel campo a sinistra, oppure premi Ctrl+V in qualsiasi punto della pagina: il formato viene riconosciuto da solo.')}
             </p>
           </header>
-          <DecodeArt />
+          <TagStage mode="read" fallback={<DecodeArt />} />
         </div>
         <table className="formats-table">
           <caption>{t('Formati riconosciuti')}</caption>
@@ -80,17 +81,17 @@ export function StartPanel({ mode, onSample, onExample }: Props) {
   }
   return (
     <section className="start">
-      <div className="start-hero">
+      <div className="start-hero stage">
         <header className="start-head">
           <h1>{t('Codifica una chiave GS1 in EPC')}</h1>
           <p>
             {t('Scegli la chiave e inserisci i dati a sinistra: ottieni l’EPC per ogni schema del TDS 2.3, la memoria del tag, i barcode e il GS1 Digital Link.')}
           </p>
-          <button type="button" className="btn btn-primary" onClick={onExample}>
+          <button type="button" className="btn btn-accent" onClick={onExample}>
             <Play size={14} /> {t('Carica un esempio')}
           </button>
         </header>
-        <EncodeArt />
+        <TagStage mode="write" fallback={<EncodeArt />} />
       </div>
       <div className="sections start-sections">
         <Section id="anatomy" tone="teal" icon={<Layers size={18} />} title={t('Com’è fatto un EPC')} summary={t('La stessa chiave in sei forme, dai bit nel tag al link sul web')} open={anatomy} onToggle={() => setAnatomy((a) => !a)}>

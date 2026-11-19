@@ -147,3 +147,13 @@ export function collapse(el: Element | null, done: () => void) {
   if (!el || prefersReducedMotion()) return done()
   gsap.to(el, { height: 0, opacity: 0, duration: 0.3, ease: 'power2.in', onComplete: done })
 }
+
+/** Gruppi di testo che compaiono uno dopo l'altro (es. l'EPC sotto il tag 3D quando il chip si accende). */
+export function revealGroups(els: ArrayLike<Element>) {
+  if (!els.length || prefersReducedMotion()) return
+  gsap.fromTo(els, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.06, ease: 'expo.out', clearProps: CLEAR })
+}
+
+/** Timeline per la scena 3D (three.js anima oggetti, non elementi della pagina): stesso motore e stesse curve. */
+export const sceneTimeline = () => gsap.timeline({ defaults: { ease: EASE.out } })
+export type SceneTimeline = ReturnType<typeof sceneTimeline>

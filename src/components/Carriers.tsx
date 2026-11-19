@@ -12,7 +12,8 @@ function download(name: string, svg: string) {
   const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }))
   const a = Object.assign(document.createElement('a'), { href: url, download: `${name}.svg` })
   a.click()
-  URL.revokeObjectURL(url)
+  // Revocato subito, in alcuni browser il download non parte.
+  setTimeout(() => URL.revokeObjectURL(url), 0)
 }
 
 /** I dati GS1 sui diversi data carrier, con cosa trasmette il lettore per ciascuno. */
@@ -52,13 +53,13 @@ export function Carriers({ data }: { data: Gs1Data }) {
               </span>
             </header>
             <div className="carrier-img">
-              {r && 'svg' in r ? <div className="svg-wrap" dangerouslySetInnerHTML={{ __html: r.svg }} /> : <p className="muted small">{r ? t('Non generabile: {error}', { error: r.error }) : c.id === 'ean13' ? t('Solo per un GTIN-13 senza altri dati.') : t('Serve una chiave primaria per il Digital Link.')}</p>}
+              {r && 'svg' in r ? <div className="svg-wrap" dangerouslySetInnerHTML={{ __html: r.svg }} /> : <p className="muted small">{r ? t('Non generabile: {error}', { error: r.error }) : c.id === 'ean13' ? t('Solo per un GTIN-13 senza altri dati.') : c.id === 'ean8' ? t('Solo per un GTIN-8 senza altri dati.') : t('Serve una chiave primaria per il Digital Link.')}</p>}
             </div>
             <p className="carrier-when">{c.when}</p>
             {r && 'svg' in r && (
               <footer>
                 <code className="mono small">{c.text(data)}</code>
-                <button className="ghost small" onClick={() => download(`${c.id}`, r.svg)}>
+                <button type="button" className="ghost small" onClick={() => download(`${c.id}`, r.svg)}>
                   <Download size={14} /> SVG
                 </button>
               </footer>

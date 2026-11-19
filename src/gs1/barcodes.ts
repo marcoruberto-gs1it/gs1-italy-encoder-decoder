@@ -6,7 +6,11 @@ type Bwip = typeof import('bwip-js/browser')
 
 let bwip: Promise<Bwip> | null = null
 /** bwip-js è grande: si carica solo quando servono i simboli. */
-export const loadBwip = () => (bwip ??= import('bwip-js/browser'))
+export const loadBwip = () =>
+  (bwip ??= import('bwip-js/browser').catch((e: unknown) => {
+    bwip = null
+    throw e
+  }))
 import type { Gs1Data } from './syntax'
 import { t } from '../i18n'
 
@@ -23,9 +27,15 @@ export type Carrier = {
   options?: Record<string, unknown>
 }
 
+const onlyGtin = (d: Gs1Data) => (d.ais.length === 1 && d.ais[0].ai === '01' ? d.ais[0].value : null)
+/** GTIN-13 (o GTIN-12, con lo zero iniziale): non un GTIN-8, che va in EAN-8. */
 const gtin13 = (d: Gs1Data) => {
-  if (d.ais.length !== 1 || d.ais[0].ai !== '01' || !d.ais[0].value.startsWith('0')) return null
-  return d.ais[0].value.slice(1)
+  const v = onlyGtin(d)
+  return v && v.startsWith('0') && !v.startsWith('000000') ? v.slice(1) : null
+}
+const gtin8 = (d: Gs1Data) => {
+  const v = onlyGtin(d)
+  return v && v.startsWith('000000') ? v.slice(6) : null
 }
 
 export const CARRIERS: Carrier[] = [
@@ -36,6 +46,15 @@ export const CARRIERS: Carrier[] = [
     symbologyId: ']E0',
     get when() { return t('Il barcode del punto cassa: contiene solo il GTIN-13, niente seriale, lotto o scadenza.') },
     text: gtin13,
+    options: { includetext: true, textxalign: 'center', height: 18 },
+  },
+  {
+    id: 'ean8',
+    name: 'EAN-8',
+    bcid: 'ean8',
+    symbologyId: ']E4',
+    get when() { return t('Per confezioni molto piccole: contiene solo il GTIN-8.') },
+    text: gtin8,
     options: { includetext: true, textxalign: 'center', height: 18 },
   },
   {
@@ -97,8 +116,10 @@ export type Rendered = { svg: string } | { error: string } | null
 export function renderCarrier(lib: Bwip, c: Carrier, d: Gs1Data): Rendered {
   const text = c.text(d)
   if (!text) return null
+  // Una "(" dentro un valore (scritta \( nell'element string) va a bwip-js come ordinale ^040.
+  const escaped = !c.dl && text.includes('\\(')
   try {
-    return { svg: lib.toSVG({ bcid: c.bcid, text, scale: 3, paddingwidth: 4, paddingheight: 4, ...c.options }) }
+    return { svg: lib.toSVG({ bcid: c.bcid, text: escaped ? text.replaceAll('\\(', '^040') : text, ...(escaped ? { parse: true, alttext: text.replaceAll('\\(', '(') } : {}), scale: 3, paddingwidth: 4, paddingheight: 4, ...c.options }) }
   } catch (e) {
     const msg = (e instanceof Error ? e.message : String(e)).replace(/^bwipp\.\w+#?\d*:\s*/i, '')
     return { error: msg }

@@ -19,7 +19,11 @@ export function loadTdt(): Promise<Tdt> {
     const t = new TDTtranslator({ schemasUrl: `${base()}tdt/schemas/` })
     await t.initialized
     return t
-  })()
+  })().catch((e: unknown) => {
+    // Un errore di rete non resta in memoria: al tentativo successivo si ricarica.
+    tdtPromise = null
+    throw e
+  })
   return tdtPromise
 }
 
@@ -28,6 +32,9 @@ export function loadSyntaxEngine(): Promise<Encoder> {
     const engine = new GS1encoder()
     await engine.init()
     return engine
+  }).catch((e: unknown) => {
+    syntaxPromise = null
+    throw e
   })
   return syntaxPromise
 }

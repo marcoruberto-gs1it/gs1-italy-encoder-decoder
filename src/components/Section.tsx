@@ -21,13 +21,23 @@ type Props = {
 export function Section({ id, tone = 'blue', icon, title, summary, open, onToggle, children }: Props) {
   const body = useRef<HTMLDivElement>(null)
   const mounted = useRef(false)
+  const closing = useRef(false)
 
   useLayoutEffect(() => {
     if (mounted.current && open) expand(body.current)
     mounted.current = true
   }, [open])
 
-  const toggle = () => (open ? collapse(body.current, onToggle) : onToggle())
+  // Un secondo clic mentre la sezione si chiude non la riapre.
+  const toggle = () => {
+    if (closing.current) return
+    if (!open) return onToggle()
+    closing.current = true
+    collapse(body.current, () => {
+      closing.current = false
+      onToggle()
+    })
+  }
 
   return (
     <section className={`section ${open ? 'open' : ''}`} id={`sec-${id}`}>

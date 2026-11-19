@@ -407,5 +407,12 @@
   "Nessun EPC": "No EPC",
   "Non disponibile per questa chiave": "Not available for this key",
   "Verifica in corso…": "Checking…",
-  "La stessa chiave in sei forme, dai bit nel tag al link sul web": "The same key in six forms, from the bits in the tag to the web link"
+  "La stessa chiave in sei forme, dai bit nel tag al link sul web": "The same key in six forms, from the bits in the tag to the web link",
+  "Non è stato possibile caricare i motori GS1. Controlla la connessione e riprova.": "The GS1 engines could not be loaded. Check your connection and try again.",
+  "Riprova": "Try again",
+  "Letto dal tag.": "Read from the tag.",
+  "Per confezioni molto piccole: contiene solo il GTIN-8.": "For very small packs: carries only the GTIN-8.",
+  "Solo per un GTIN-8 senza altri dati.": "Only for a GTIN-8 with no other data.",
+  "I 96 bit dell’EPC scritti nel chip": "The 96 EPC bits written to the chip",
+  "Il lettore legge i 96 bit dal chip": "The reader reads the 96 bits from the chip"
 }

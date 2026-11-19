@@ -10,6 +10,7 @@ import { segmentColors } from '../colors'
 import type { Issue, IssueAction } from '../issues'
 import { alertIn, rollIn, waveIn } from '../motion'
 import { CopyButton } from './ui'
+import { LottieIcon } from './LottieIcon'
 import { t } from '../i18n'
 
 type Ok = Extract<SchemeResult, { ok: true }>
@@ -50,7 +51,7 @@ export function Readout({ analysis, scheme, busy, vbg, issues, onTab, onAction }
           <header className="ro-head">
             <div className="ro-title">
               <span className={`badge ${warn ? 'badge-warn' : 'badge-ok'}`}>
-                {warn ? <AlertTriangle size={15} /> : <CheckCircle2 size={15} />}
+                {warn ? <AlertTriangle size={15} /> : <LottieIcon name="check" size={17} replay={ok?.hex ?? gs1?.elementString} className="lottie-current" fallback={<CheckCircle2 size={15} />} />}
                 {warn ? t('Da verificare') : t('Valido')}
               </span>
               <h2>{analysis.key ? analysis.key.name : t('Dati GS1 validi')}</h2>
@@ -159,11 +160,10 @@ function Row({ icon, tile, label, note, value }: { icon: ReactNode; tile: TileTo
 function IssueRow({ issue, onAction }: { issue: Issue; onAction: (a: IssueAction) => void }) {
   const ref = useRef<HTMLLIElement>(null)
   useLayoutEffect(() => alertIn(ref.current, issue.level === 'error'), [])
-  const Icon = issue.level === 'error' ? AlertOctagon : AlertTriangle
   return (
     <li className={`issue issue-${issue.level}`} ref={ref} role={issue.level === 'error' ? 'alert' : undefined}>
       <span className="issue-icon">
-        <Icon size={18} />
+        {issue.level === 'error' ? <LottieIcon name="cross" size={20} replay={issue.title} className="lottie-current" fallback={<AlertOctagon size={18} />} /> : <AlertTriangle size={18} />}
       </span>
       <div className="issue-text">
         <p className="issue-title">{issue.title}</p>

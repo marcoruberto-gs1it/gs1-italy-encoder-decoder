@@ -29,6 +29,8 @@ export type Analysis = {
   /** Lunghezza del GS1 Company Prefix: da Verified by GS1, dal tag letto o scelta dall'utente; null se manca. */
   gcp: { length: number | null; source: GcpSource | null; pending: boolean }
   params: { filter: number; hostname: string }
+  /** Nel decoder: valori letti dal tag, che prevalgono sui parametri dell'utente. */
+  fromTag?: { filter: boolean; hostname: boolean }
   results: SchemeResult[]
 }
 
@@ -60,7 +62,7 @@ export async function analyzeDecode(text: string, params: Params, vbg: VbgGcp = 
       gcpLength: params.gcpLength,
     }
     const a = await finish(tdt, epc.ais, merged, vbg, epc.gcpLength)
-    return { ...a, detected: `${levelLabel(epc.level)} · ${epc.scheme}`, sourceScheme: epc.scheme }
+    return { ...a, detected: `${levelLabel(epc.level)} · ${epc.scheme}`, sourceScheme: epc.scheme, fromTag: { filter: epc.filter != null, hostname: epc.hostname != null } }
   }
   if (!looksLikeGs1(input)) {
     return { ...empty, error: t('Formato non riconosciuto. Prova con un EPC esadecimale, un URN urn:epc:…, un GS1 Digital Link, un’element string (01)… o un GTIN.') }
@@ -73,8 +75,7 @@ export async function analyzeDecode(text: string, params: Params, vbg: VbgGcp = 
 }
 
 async function finish(tdt: Tdt, ais: Ai[], params: Params, vbg: VbgGcp, tagGcp?: number): Promise<Analysis> {
-  const gcp = gcpFor(ais, params, vbg, tagGcp)
-  const base: Analysis = { ais, gcp, params: { filter: params.filter, hostname: params.hostname }, results: [] }
+  const base: Analysis = { ais, gcp: gcpFor(ais, params, vbg, tagGcp), params: { filter: params.filter, hostname: params.hostname }, results: [] }
   if (!ais.length) return base
 
   const described = await describeAis(ais)
@@ -83,7 +84,9 @@ async function finish(tdt: Tdt, ais: Ai[], params: Params, vbg: VbgGcp, tagGcp?:
   // Ordine canonico: la chiave e i suoi qualificatori prima, poi gli altri AI.
   const key = keyTypeForAis(gs1.ais)
   const ordered = key ? [...key.fields.map((f) => gs1.ais.find((a) => a.ai === f.ai)).filter((a): a is Ai => Boolean(a)), ...gs1.ais.filter((a) => !key.fields.some((f) => f.ai === a.ai))] : gs1.ais
-  const withGs1 = { ...base, ais: ordered, gs1, key }
+  // Il GS1 Company Prefix si cerca sulla chiave, non sul primo AI scritto (es. (17)…(01)…).
+  const gcp = gcpFor(ordered, params, vbg, tagGcp)
+  const withGs1 = { ...base, ais: ordered, gcp, gs1, key }
 
   if (!key) return { ...withGs1, rfidNote: t('Per un tag RFID serve una chiave GS1 serializzata: GTIN + seriale, SSCC, GLN, GRAI, GIAI, GSRN, GDTI, GCN, CPI o ITIP.') }
   const missing = key.fields.find((f) => !f.optional && !ordered.some((a) => a.ai === f.ai))

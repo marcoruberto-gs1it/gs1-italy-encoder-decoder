@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { Binary, Check, Copy } from 'lucide-react'
 import { t } from '../i18n'
+import { LottieIcon } from './LottieIcon'
 
 type CopyProps = {
   /** Testo da copiare, o funzione che lo calcola al clic (es. l'indirizzo corrente). */
@@ -14,12 +15,12 @@ type CopyProps = {
 export function CopyButton({ value, label, icon, text }: CopyProps) {
   const [done, setDone] = useState(false)
   label ??= t('Copia')
-  const glyph = done ? <Check size={15} /> : icon === 'bin' ? <Binary size={15} /> : (icon ?? <Copy size={15} />)
+  const glyph = done ? <LottieIcon name="tick" size={16} className="lottie-current" fallback={<Check size={15} />} /> : icon === 'bin' ? <Binary size={15} /> : (icon ?? <Copy size={15} />)
   return (
     <button
       type="button"
       className={`${text ? 'copy-btn' : 'icon-btn'} ${done ? 'done' : ''}`}
-      aria-label={label}
+      aria-label={done ? t('Copiato') : label}
       title={label}
       onClick={() => {
         const v = typeof value === 'function' ? value() : value

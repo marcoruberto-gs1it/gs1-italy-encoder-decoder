@@ -86,7 +86,7 @@ function read(engine: Awaited<ReturnType<typeof loadSyntaxEngine>>, stem: string
   }
   return {
     ais,
-    elementString: ais.map((a) => `(${a.ai})${a.value}`).join(''),
+    elementString: ais.map((a) => `(${a.ai})${a.value.replace(/\(/g, '\\(')}`).join(''),
     scanData: engine.dataStr,
     hri,
     dl,
