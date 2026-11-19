@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react'
-import { Hash, Plus, Trash2, Wand2, ArrowRightLeft, Play, BadgeCheck, Loader2, Eraser, Filter, Building2, Globe, Nfc } from 'lucide-react'
+import { useLayoutEffect, useRef, type ReactNode } from 'react'
+import { Hash, Plus, Trash2, Wand2, ArrowRightLeft, Play, BadgeCheck, Loader2, Eraser, Filter, Building2, Globe, Nfc, ChevronDown } from 'lucide-react'
 import { AiIcon, ConceptIcon, NumberIcon, OtherIcon, filterIcon, keyIcon } from '@/icons'
 import { Button } from '@/components/ui/button'
 import { Input, Textarea } from '@/components/ui/input'
@@ -12,7 +12,9 @@ import { KEY_TYPES, SCHEMES_BY_FAMILY, familyOf, filterOptions, keyType, kindOf,
 import { aiLabel } from '../gs1/aiDictionary'
 import { computeCheckDigit, isCheckDigitValid } from '../gs1/checkDigit'
 import { SchemeSelect } from './EpcParts'
-import { KeyDataIcon, ReaderIcon, RfidTagIcon } from './Art'
+import { DigitalLinkIcon, KeyDataIcon, ReaderIcon, RfidTagIcon } from './Art'
+import { DECODE_SAMPLES } from './decodeSamples'
+import { aiColor } from '../colors'
 import { Dropdown } from './Dropdown'
 import { t } from '../i18n'
 import { LottieIcon } from './LottieIcon'
@@ -90,7 +92,7 @@ export function InputPanel(p: Props) {
   return (
     <section className="input-panel" aria-label={title}>
       <div className="flex items-center justify-between gap-3 pt-4 pb-2">
-        <h2 className="text-xs font-medium text-muted-foreground">{title}</h2>
+        <h2 className="text-sm font-semibold text-muted-foreground">{title}</h2>
         <Tooltip content={t('Svuota i campi e riporta tag e parametri ai valori iniziali')}>
           <Button variant="outline" size="sm" className="text-muted-foreground hover:border-destructive/30 hover:bg-destructive/5 hover:text-destructive" disabled={!p.canReset} onClick={p.onReset}>
             <Eraser /> {t('Cancella i dati')}
@@ -141,7 +143,7 @@ export function InputPanel(p: Props) {
                       {f.optional && <span className="font-medium text-muted-foreground">· {t('facoltativo')}</span>}
                       <span className="ml-auto flex items-center gap-1.5">
                         {missing && <Badge variant="warning">{t('obbligatorio')}</Badge>}
-                        <Badge variant="secondary" className="font-mono">
+                        <Badge className="border-transparent font-mono text-white" style={{ background: aiColor(f.ai) }}>
                           AI {f.ai}
                         </Badge>
                       </span>
@@ -183,7 +185,7 @@ export function InputPanel(p: Props) {
                       className="min-w-0 flex-1"
                       value={EXTRA_AIS.some((e) => e.ai === x.ai) ? x.ai : 'altro'}
                       onChange={(v) => setExtra(i, { ai: v === 'altro' ? '' : v })}
-                      options={[...EXTRA_AIS.map((e) => ({ value: e.ai, label: aiLabel(e.ai), icon: <AiIcon ai={e.ai} />, aside: <span className="ai-tag">AI {e.ai}</span> })), { value: 'altro', label: t('Altro AI…'), detail: t('Scrivi il numero dell’AI'), icon: <ConceptIcon icon={OtherIcon} tone="gray" /> }]}
+                      options={[...EXTRA_AIS.map((e) => ({ value: e.ai, label: aiLabel(e.ai), icon: <AiIcon ai={e.ai} />, aside: <span className="ai-tag" style={{ color: aiColor(e.ai), background: `${aiColor(e.ai)}14` }}>AI {e.ai}</span> })), { value: 'altro', label: t('Altro AI…'), detail: t('Scrivi il numero dell’AI'), icon: <ConceptIcon icon={OtherIcon} tone="gray" /> }]}
                     />
                     <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" aria-label={t('Rimuovi')} onClick={() => setEncoder({ ...encoder, extras: encoder.extras.filter((_, k) => k !== i) })}>
                       <Trash2 />
@@ -211,7 +213,7 @@ export function InputPanel(p: Props) {
           </Label>
           <Textarea
             id="decode-input"
-            className="font-mono text-[13px] leading-relaxed break-all"
+            className="font-mono text-[14.5px] leading-relaxed break-all"
             aria-invalid={Boolean(analysis?.error) || undefined}
             rows={3}
             value={p.decodeText}
@@ -231,6 +233,31 @@ export function InputPanel(p: Props) {
               )}
             </div>
           )}
+          <Disclosure open={!p.decodeText.trim() || Boolean(analysis?.error)} title={t('Che cosa puoi inserire')} aside={t('{n} formati', { n: DECODE_SAMPLES.length })}>
+            <p className="px-1 pb-2 text-[13.5px] leading-snug text-muted-foreground">{t('Il formato si riconosce da solo. Premi «Prova» per caricare un esempio.')}</p>
+            <ul className="decode-samples grid gap-1.5">
+              {DECODE_SAMPLES.map((s) => {
+                const current = p.decodeText.trim() === s.text
+                return (
+                  <li key={s.text} className={cn('flex items-center gap-3 rounded-xl bg-card px-3 py-2.5', current && 'ring-2 ring-primary/30')}>
+                    <span className={`tile tile-xs tile-${SAMPLE_TONE[s.kind]}`} aria-hidden>
+                      {s.kind === 'rfid' ? <RfidTagIcon size={14} /> : s.kind === 'web' ? <DigitalLinkIcon size={14} /> : <KeyDataIcon size={14} />}
+                    </span>
+                    <span className="flex min-w-0 flex-1 flex-col">
+                      <span className="text-[14.5px] font-bold text-primary">{s.label}</span>
+                      <span className="text-[13.5px] leading-snug text-muted-foreground">{s.detail}</span>
+                      <code className="mt-1 line-clamp-2 rounded-md bg-muted px-1.5 py-0.5 font-mono text-[12.5px] leading-snug break-all text-foreground/80" title={s.text}>
+                        {s.text}
+                      </code>
+                    </span>
+                    <Button variant={current ? 'secondary' : 'outline'} size="xs" className="shrink-0 text-primary" aria-label={t('Prova: {what}', { what: s.label })} onClick={() => p.setDecodeText(s.text)}>
+                      <Play /> {t('Prova')}
+                    </Button>
+                  </li>
+                )
+              })}
+            </ul>
+          </Disclosure>
         </div>
       )}
 
@@ -294,8 +321,31 @@ export function InputPanel(p: Props) {
   )
 }
 
+const SAMPLE_TONE = { rfid: 'teal', web: 'forest', gs1: 'blue' } as const
+
+/**
+ * Riquadro che si apre e si chiude (details nativo). `open` lo apre o lo chiude quando cambia
+ * (aperto a campo vuoto o con un dato non valido, chiuso appena il dato è riconosciuto); in mezzo l'utente lo gestisce liberamente.
+ */
+function Disclosure({ open, title, aside, children }: { open: boolean; title: string; aside?: string; children: ReactNode }) {
+  const ref = useRef<HTMLDetailsElement>(null)
+  useLayoutEffect(() => {
+    if (ref.current) ref.current.open = open
+  }, [open])
+  return (
+    <details ref={ref} className="group/dis rounded-2xl bg-muted">
+      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-2xl px-3 py-3 text-[15px] font-bold text-primary outline-none hover:bg-secondary focus-visible:ring-[3px] focus-visible:ring-ring/50 [&::-webkit-details-marker]:hidden">
+        <span className="min-w-0 flex-1">{title}</span>
+        {aside && <span className="text-[13px] font-medium text-muted-foreground">{aside}</span>}
+        <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open/dis:rotate-180" aria-hidden />
+      </summary>
+      <div className="px-2 pb-2">{children}</div>
+    </details>
+  )
+}
+
 function Hint({ tone, children }: { tone?: 'ok' | 'bad'; children: ReactNode }) {
-  return <p className={cn('hint text-xs leading-snug text-muted-foreground', tone === 'ok' && 'text-success', tone === 'bad' && 'font-medium text-destructive')}>{children}</p>
+  return <p className={cn('hint text-[13px] leading-snug text-muted-foreground', tone === 'ok' && 'text-success', tone === 'bad' && 'font-medium text-destructive')}>{children}</p>
 }
 
 /** Valore non modificabile perché letto dal tag o da Verified by GS1. */

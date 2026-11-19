@@ -4,6 +4,7 @@ import { KIND_INFO } from '../gs1/schemes'
 import { CopyButton, CopyText } from './Copy'
 import { ColoredBits, epcRuns } from './ColoredBits'
 import { CoverageMatrix } from './Coverage'
+import { ColoredDl, ColoredEs } from './GsData'
 import { t } from '../i18n'
 import { Button } from '@/components/ui/button'
 import { Tooltip } from '@/components/ui/misc'
@@ -17,9 +18,9 @@ export function Formats({ analysis, onDecode }: { analysis: Analysis; onDecode: 
     <div className="formats">
       <h3>{t('Dati GS1')}</h3>
       <div className="result-grid">
-        <CopyText label={t('Element string (con parentesi, per le persone)')} value={gs1.elementString} />
+        <CopyText label={t('Element string (con parentesi, per le persone)')} value={gs1.elementString} display={<ColoredEs ais={gs1.ais} />} />
         <CopyText label={t('Dati con FNC1 (^ = FNC1 / separatore GS)')} value={gs1.scanData} />
-        {gs1.dl && <CopyText label="GS1 Digital Link URI" value={gs1.dl} />}
+        {gs1.dl && <CopyText label="GS1 Digital Link URI" value={gs1.dl} display={<ColoredDl url={gs1.dl} />} />}
         <CopyText label="GS1 AI JSON (TDT)" value={json} />
         {first?.ok && first.uris.pure && <CopyText label="EPC Pure Identity URI" value={first.uris.pure} />}
         {first?.ok && first.uris.bare && <CopyText label={t('Identificatore TDT')} value={first.uris.bare} />}

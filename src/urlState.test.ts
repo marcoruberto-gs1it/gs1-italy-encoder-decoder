@@ -12,7 +12,7 @@ describe('stato nell’indirizzo', () => {
     expect(back.mode).toBe('decode')
     expect(back.decodeText).toBe('3035E8480000004000003039')
     expect(back.scheme).toBe('SGTIN-96')
-    expect(back.open).toEqual(['rfid', 'barcode'])
+    expect(back.open).toEqual(['barcode', 'rfid'])
   })
   it('encoder: chiave, dati aggiuntivi e parametri del tag', () => {
     const encoder = { keyId: 'sgtin', values: { '01': '08000000000019', '21': 'A/B:1' }, extras: [{ ai: '17', value: '271231' }] }

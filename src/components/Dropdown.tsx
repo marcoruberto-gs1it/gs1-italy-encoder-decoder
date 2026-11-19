@@ -78,7 +78,7 @@ export function Dropdown({ id, value, options, onChange, placeholder, display, a
                   {o.icon && <span className="flex shrink-0">{o.icon}</span>}
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5 self-center">
                     <span className={cn('font-semibold text-foreground', o.muted && 'text-muted-foreground line-through decoration-muted-foreground/40')}>{o.label}</span>
-                    {o.detail && <span className="text-xs text-muted-foreground">{o.detail}</span>}
+                    {o.detail && <span className="text-[13px] leading-snug text-muted-foreground">{o.detail}</span>}
                   </span>
                   {o.aside && <span className="shrink-0 self-center">{o.aside}</span>}
                   <Check className={cn('size-4 shrink-0 self-center text-primary', o.value === value ? 'opacity-100' : 'opacity-0')} aria-hidden />

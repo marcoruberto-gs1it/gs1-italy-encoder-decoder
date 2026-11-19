@@ -1,14 +1,13 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { AlertOctagon, AlertTriangle, ArrowRight, BadgeCheck, Binary, CheckCircle2, ChevronRight, Filter, Fingerprint, Layers, Link2, Loader2 } from 'lucide-react'
+import { AlertOctagon, AlertTriangle, ArrowRight, BadgeCheck, Binary, CheckCircle2, ChevronRight, Filter, Layers, Link2, Loader2 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertTitle } from '@/components/ui/misc'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
 import { ConceptIcon, keyIcon } from '@/icons'
 import type { ReactNode } from 'react'
-import { DigitalLinkIcon, KeyDataIcon, RfidTagIcon } from './Art'
+import { RfidTagIcon } from './Art'
 import type { Analysis } from '../gs1/analyze'
 import type { SchemeResult } from '../gs1/epc'
 import type { Verification } from '../gs1/vbg'
@@ -16,8 +15,10 @@ import { KIND_INFO, filterMeaning, familyOf } from '../gs1/schemes'
 import { segmentColors } from '../colors'
 import type { Issue, IssueAction } from '../issues'
 import { alertIn, rollIn, waveIn } from '../motion'
-import { CopyButton } from './Copy'
+import { CopyButton, CopyText } from './Copy'
 import { LottieIcon } from './LottieIcon'
+import { AiList, ColoredDl, ColoredEs } from './GsData'
+import { Rich } from './Rich'
 import { t } from '../i18n'
 
 type Ok = Extract<SchemeResult, { ok: true }>
@@ -33,15 +34,18 @@ type Props = {
 }
 
 /**
- * Riepilogo dell'EPC: stato, esadecimale con i bit colorati per campo, pochi valori chiave e le
- * rappresentazioni da copiare. Sopra, le segnalazioni con l'azione che risolve ciascuna.
+ * Riepilogo in chiaro, per tutti: i dati GS1 con ogni AI nel suo colore, l'element string,
+ * il GS1 Digital Link e l'EPC Pure Identity URI. L'EPC per il tag RFID e i dettagli tecnici
+ * sono nelle sezioni sotto. Sopra, le segnalazioni con l'azione che risolve ciascuna.
  */
 export function Readout({ analysis, scheme, busy, vbg, issues, onTab, onAction }: Props) {
   const result = analysis.results.find((r) => r.scheme === scheme)
   const ok = result?.ok ? result : null
   const gs1 = analysis.gs1
-  const encodable = analysis.results.filter((r) => r.ok).length
   const warn = issues.length > 0
+  const pure = ok?.uris.pure ?? analysis.results.find((r): r is Ok => r.ok && Boolean(r.uris.pure))?.uris.pure
+  // Il Digital Link completo (con tutti gli AI, anche nella query); con uno schema ++ il dominio è quello scritto nel tag.
+  const dl = gs1?.dl && ok?.kind === 'plusplus' ? gs1.dl.replace(/^https:\/\/id\.gs1\.org/, `https://${analysis.params.hostname}`) : (gs1?.dl ?? ok?.uris.dl)
 
   return (
     <div className="flex flex-col gap-3.5">
@@ -53,36 +57,51 @@ export function Readout({ analysis, scheme, busy, vbg, issues, onTab, onAction }
         </ul>
       )}
 
-      {!analysis.error && (
+      {!analysis.error && gs1 && (
         <Card className={cn('readout gap-0 overflow-hidden py-0', busy && 'busy')}>
           <header className="ro-head flex flex-wrap items-center justify-between gap-3 px-8 pt-6 phone:px-4 phone:pt-4">
             <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
               <Badge variant={warn ? 'warning' : 'success'} className="h-7 gap-1.5 rounded-full px-3 text-sm font-semibold">
-                {warn ? <AlertTriangle className="size-4!" /> : <LottieIcon name="check" size={17} replay={ok?.hex ?? gs1?.elementString} className="lottie-current" fallback={<CheckCircle2 className="size-4!" />} />}
+                {warn ? <AlertTriangle className="size-4!" /> : <LottieIcon name="check" size={17} replay={gs1.elementString} className="lottie-current" fallback={<CheckCircle2 className="size-4!" />} />}
                 {warn ? t('Da verificare') : t('Valido')}
               </Badge>
-              <h2 className="flex items-center gap-2 text-[15px] font-bold text-primary">
+              <h2 className="flex items-center gap-2 text-[17px] font-bold text-primary">
                 <ConceptIcon icon={keyIcon(analysis.key?.id)} size="xs" />
                 {analysis.key ? analysis.key.name : t('Dati GS1 validi')}
               </h2>
               {busy && <Loader2 size={16} className="spin text-muted-foreground" aria-label={t('Calcolo in corso')} />}
             </div>
-            <div className="ro-actions flex gap-1.5 phone:w-full phone:*:flex-1">
-              {ok && <CopyButton value={ok.hex} label={t('Copia l’EPC in esadecimale')} text="HEX" />}
-              {ok && <CopyButton value={ok.bits} label={t('Copia in binario')} text="BIN" />}
-              <CopyButton value={() => window.location.href} label={t('Copia il link a questa decodifica')} text={t('Link')} icon={<Link2 />} />
-            </div>
+            <CopyButton value={() => window.location.href} label={t('Copia il link a questa decodifica')} text={t('Link')} icon={<Link2 />} />
           </header>
 
-          {ok ? <HexView result={ok} /> : <p className="px-8 pt-5 pb-2 text-[15px] text-muted-foreground phone:px-4">{t('Nessun EPC da mostrare: vedi le segnalazioni qui sopra.')}</p>}
+          <section className="px-8 pt-5 phone:px-4" aria-labelledby="ro-data">
+            <h3 id="ro-data" className="mb-2.5 text-sm font-bold text-muted-foreground">
+              {t('I dati')}
+            </h3>
+            <AiList ais={analysis.ais} />
+          </section>
 
-          <dl className="mx-8 mt-5 mb-6 grid grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-2 border-t pt-5 phone:mx-4 phone:grid-cols-2 phone:gap-1">
-            <Stat icon={<RfidTagIcon size={18} />} tile="teal" label={t('Schema')} value={ok ? ok.scheme : '—'} note={ok ? KIND_INFO[ok.kind].label : undefined} />
-            <Stat icon={<Binary size={18} />} tile="teal" label={t('Lunghezza')} value={ok ? t('{bits} bit', { bits: ok.length }) : '—'} note={ok ? t('{words} parole da 16 bit', { words: Math.ceil(ok.length / 16) }) : undefined} />
-            <Stat icon={<Filter size={17} />} tile="blue" label="Filter" value={String(analysis.params.filter)} note={ok ? filterMeaning(familyOf(ok.scheme), analysis.params.filter) : undefined} />
-            {analysis.results.length > 0 && (
-              <Stat icon={<Layers size={18} />} tile={encodable ? 'blue' : 'orange'} label={t('Schemi EPC')} value={t('{ok} su {total}', { ok: encodable, total: analysis.results.length })} note={t('codificabili con questi dati')} onClick={() => onTab('formats')} />
-            )}
+          <section className="px-8 pt-6 phone:px-4" aria-labelledby="ro-forms">
+            <h3 id="ro-forms" className="mb-2.5 text-sm font-bold text-muted-foreground">
+              {t('Come si scrivono')}
+            </h3>
+            <div className="flex flex-col gap-2.5">
+              <Repr label="Element string" note={t('Con gli AI tra parentesi, come sotto i barcode')} value={gs1.elementString} display={<ColoredEs ais={gs1.ais} />} />
+              {dl && <Repr label="GS1 Digital Link" note={t('La stessa chiave come link web, per i QR code')} value={dl} display={<ColoredDl url={dl} />} />}
+              {pure && <Repr label="EPC Pure Identity URI" note={t('L’identità dell’oggetto, usata in EPCIS')} value={pure} />}
+            </div>
+          </section>
+
+          <dl className="mx-8 mt-5 mb-6 grid grid-cols-2 gap-2 border-t pt-4 phone:mx-4 phone:grid-cols-1 phone:gap-1">
+            <Stat
+              icon={<RfidTagIcon size={18} />}
+              tile={ok ? 'teal' : 'gray'}
+              label={t('EPC per il tag RFID')}
+              value={ok ? ok.scheme : t('Non disponibile')}
+              note={ok ? ok.hex : (analysis.rfidNote ?? t('Vedi le segnalazioni qui sopra.'))}
+              mono={Boolean(ok)}
+              onClick={() => onTab('epc')}
+            />
             {vbg && (
               <Stat
                 icon={<BadgeCheck size={18} />}
@@ -95,42 +114,71 @@ export function Readout({ analysis, scheme, busy, vbg, issues, onTab, onAction }
               />
             )}
           </dl>
-
-          <Table className="border-t">
-            <TableHeader className="phone:hidden">
-              <TableRow className="hover:bg-transparent">
-                <TableHead scope="col" className="pl-8">{t('Rappresentazione')}</TableHead>
-                <TableHead scope="col">{t('Valore')}</TableHead>
-                <TableHead scope="col" className="pr-8">
-                  <span className="visually-hidden">{t('Copia')}</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {ok?.uris.tag && <Row icon={<RfidTagIcon size={17} />} tile="teal" label="EPC Tag URI" note={t('Campi del tag in testo')} value={ok.uris.tag} />}
-              {ok?.uris.pure && <Row icon={<Fingerprint size={17} />} tile="blue" label="EPC Pure Identity URI" note={t('L’identità, usata in EPCIS')} value={ok.uris.pure} />}
-              {gs1?.dl && <Row icon={<DigitalLinkIcon size={17} />} tile="forest" label="GS1 Digital Link" note={t('La chiave come link web')} value={ok?.uris.dl ?? gs1.dl} />}
-              {gs1 && <Row icon={<KeyDataIcon size={17} />} tile="blue" label="Element string" note={t('Con gli AI, come nei barcode')} value={gs1.elementString} />}
-            </TableBody>
-          </Table>
         </Card>
       )}
     </div>
   )
 }
 
+/** Una rappresentazione da copiare: nome, a che cosa serve e il valore (colorato per AI dove ha senso). */
+function Repr({ label, note, value, display }: { label: string; note: string; value: string; display?: ReactNode }) {
+  return (
+    <div className="rounded-2xl border bg-muted/40 py-3 pr-2 pl-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[15px] font-bold text-primary">{label}</p>
+          <p className="text-[13px] text-muted-foreground">{note}</p>
+        </div>
+        <CopyButton value={value} label={t('Copia {what}', { what: label })} />
+      </div>
+      <code className="mt-1.5 block pr-2 font-mono text-[15px] leading-relaxed [overflow-wrap:anywhere] text-foreground">{display ?? value}</code>
+    </div>
+  )
+}
+
+/** L'EPC per il tag RFID: esadecimale con i bit colorati per campo, parametri e EPC Tag URI. */
+export function EpcPanel({ analysis, scheme, onTab }: { analysis: Analysis; scheme: string | null; onTab: (tab: string) => void }) {
+  const result = analysis.results.find((r) => r.scheme === scheme)
+  const ok = result?.ok ? result : null
+  const encodable = analysis.results.filter((r) => r.ok).length
+  if (!ok) return <div className="note warn">{analysis.rfidNote ?? (result && !result.ok ? result.error : t('Nessun EPC da mostrare: vedi le segnalazioni qui sopra.'))}</div>
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="m-0 text-sm text-muted-foreground">
+          <Rich text={t('L’EPC da scrivere nel tag, nello schema **{scheme}**. Passa sopra un colore per vedere il campo: i dati GS1 hanno il colore del loro AI.', { scheme: ok.scheme })} />
+        </p>
+        <div className="flex gap-1.5">
+          <CopyButton value={ok.hex} label={t('Copia l’EPC in esadecimale')} text="HEX" />
+          <CopyButton value={ok.bits} label={t('Copia in binario')} text="BIN" />
+        </div>
+      </div>
+      <div className="overflow-hidden rounded-2xl border bg-card">
+        <HexView result={ok} />
+      </div>
+      <dl className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2 phone:grid-cols-2 phone:gap-1">
+        <Stat icon={<RfidTagIcon size={18} />} tile="teal" label={t('Schema')} value={ok.scheme} note={KIND_INFO[ok.kind].label} />
+        <Stat icon={<Binary size={18} />} tile="teal" label={t('Lunghezza')} value={t('{bits} bit', { bits: ok.length })} note={t('{words} parole da 16 bit', { words: Math.ceil(ok.length / 16) })} />
+        <Stat icon={<Filter size={17} />} tile="blue" label="Filter" value={String(analysis.params.filter)} note={filterMeaning(familyOf(ok.scheme), analysis.params.filter)} />
+        <Stat icon={<Layers size={18} />} tile={encodable ? 'blue' : 'orange'} label={t('Schemi EPC')} value={t('{ok} su {total}', { ok: encodable, total: analysis.results.length })} note={t('codificabili con questi dati')} onClick={() => onTab('formats')} />
+      </dl>
+      {ok.uris.tag && <CopyText label={t('EPC Tag URI: i campi del tag in testo')} value={ok.uris.tag} />}
+    </div>
+  )
+}
+
 type TileTone = 'blue' | 'teal' | 'forest' | 'orange' | 'red' | 'gray'
 
-function Stat({ icon, tile, label, value, note, tone, onClick }: { icon: ReactNode; tile: TileTone; label: string; value: string; note?: string; tone?: 'ok' | 'warn' | 'bad'; onClick?: () => void }) {
+function Stat({ icon, tile, label, value, note, tone, mono, onClick }: { icon: ReactNode; tile: TileTone; label: string; value: string; note?: string; tone?: 'ok' | 'warn' | 'bad'; mono?: boolean; onClick?: () => void }) {
   const body = (
     <>
       <span className={`tile tile-${tile} phone:hidden!`} aria-hidden>
         {icon}
       </span>
-      <span className="flex min-w-0 flex-col gap-0.5">
-        <dt className="text-[13px] text-muted-foreground">{label}</dt>
+      <span className="flex min-w-0 flex-col gap-0.5 pr-4">
+        <dt className="text-sm text-muted-foreground">{label}</dt>
         <dd className={cn('text-[17px] leading-tight font-bold tracking-tight text-primary', tone === 'ok' && 'text-success', tone === 'warn' && 'text-warning', tone === 'bad' && 'text-destructive')}>{value}</dd>
-        {note && <dd className="line-clamp-2 text-xs text-muted-foreground">{note}</dd>}
+        {note && <dd className={cn('line-clamp-2 text-[13px] text-muted-foreground', mono && 'font-mono [overflow-wrap:anywhere]')}>{note}</dd>}
       </span>
     </>
   )
@@ -138,34 +186,10 @@ function Stat({ icon, tile, label, value, note, tone, onClick }: { icon: ReactNo
   return onClick ? (
     <button type="button" className={cn(cls, 'group relative cursor-pointer transition-colors outline-none hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50')} onClick={onClick}>
       {body}
-      <ChevronRight className="absolute top-3 right-1.5 size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" aria-hidden />
+      <ChevronRight className="absolute top-3 right-1.5 size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden />
     </button>
   ) : (
     <div className={cls}>{body}</div>
-  )
-}
-
-function Row({ icon, tile, label, note, value }: { icon: ReactNode; tile: TileTone; label: string; note: string; value: string }) {
-  return (
-    <TableRow className="phone:grid phone:grid-cols-[minmax(0,1fr)_auto] phone:py-2.5 phone:pr-2 phone:pl-4">
-      <TableHead scope="row" className="h-auto w-[30%] py-3 pl-8 whitespace-normal text-foreground phone:w-auto phone:p-0">
-        <span className="flex items-center gap-3">
-          <span className={`tile tile-sm tile-${tile} phone:hidden!`} aria-hidden>
-            {icon}
-          </span>
-          <span className="flex flex-col">
-            <span className="text-sm font-semibold">{label}</span>
-            <span className="text-xs font-normal text-muted-foreground">{note}</span>
-          </span>
-        </span>
-      </TableHead>
-      <TableCell className="phone:col-span-2 phone:row-start-2 phone:p-0 phone:pt-1">
-        <code className="font-mono text-[13px] [overflow-wrap:anywhere] text-foreground/80">{value}</code>
-      </TableCell>
-      <TableCell className="w-px pr-8 phone:col-start-2 phone:row-start-1 phone:w-auto phone:p-0">
-        <CopyButton value={value} label={t('Copia {what}', { what: label })} />
-      </TableCell>
-    </TableRow>
   )
 }
 

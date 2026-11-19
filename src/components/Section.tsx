@@ -53,8 +53,8 @@ export function Section({ id, tone = 'blue', icon, title, summary, open, onToggl
           <span className={`tile tile-${tone}`} aria-hidden>
             {icon}
           </span>
-          <span className="text-[15px] font-bold whitespace-nowrap text-primary">{title}</span>
-          <span className="truncate text-[13.5px] text-muted-foreground phone:hidden">{summary}</span>
+          <span className="text-base font-bold whitespace-nowrap text-primary">{title}</span>
+          <span className="truncate text-sm text-muted-foreground phone:hidden">{summary}</span>
           <ChevronDown className="size-[18px] text-muted-foreground transition-transform duration-300 group-aria-expanded:rotate-180" aria-hidden />
         </button>
       </h2>
@@ -68,10 +68,15 @@ export function Section({ id, tone = 'blue', icon, title, summary, open, onToggl
 }
 
 /** Gruppo di sezioni in una Card, con un titolo facoltativo. */
-export function Sections({ title, className, children }: { title?: string; className?: string; children: ReactNode }) {
+export function Sections({ title, note, className, children }: { title?: string; note?: string; className?: string; children: ReactNode }) {
   return (
     <div className={cn('sections overflow-hidden rounded-3xl bg-card shadow-card', className)}>
-      {title && <h2 className="border-b px-6 pt-4 pb-3 text-[15px] font-bold text-primary phone:px-4">{title}</h2>}
+      {title && (
+        <div className="border-b px-6 pt-4 pb-3 phone:px-4">
+          <h2 className="text-base font-bold text-primary">{title}</h2>
+          {note && <p className="mt-0.5 text-sm text-muted-foreground">{note}</p>}
+        </div>
+      )}
       {children}
     </div>
   )

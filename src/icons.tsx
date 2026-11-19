@@ -47,13 +47,14 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { aiColor } from './colors'
 
 export type Tone = 'blue' | 'teal' | 'forest' | 'orange' | 'gray' | 'red'
 
 /** Riquadro colorato con l'icona di un concetto. */
-export function ConceptIcon({ icon: Icon, tone = 'blue', size = 'sm', className }: { icon: LucideIcon; tone?: Tone; size?: 'xs' | 'sm' | 'md'; className?: string }) {
+export function ConceptIcon({ icon: Icon, tone = 'blue', color, size = 'sm', className }: { icon: LucideIcon; tone?: Tone; color?: string; size?: 'xs' | 'sm' | 'md'; className?: string }) {
   return (
-    <span className={cn('tile', `tile-${tone}`, size === 'xs' ? 'tile-xs' : size === 'sm' ? 'tile-sm' : '', className)} aria-hidden>
+    <span className={cn('tile', !color && `tile-${tone}`, size === 'xs' ? 'tile-xs' : size === 'sm' ? 'tile-sm' : '', className)} style={color ? { color, background: `${color}1a` } : undefined} aria-hidden>
       <Icon size={size === 'xs' ? 14 : size === 'sm' ? 16 : 18} />
     </span>
   )
@@ -104,9 +105,19 @@ const AI_ICONS: Record<string, [LucideIcon, Tone]> = {
   '8018': [UserRound, 'blue'],
 }
 export const aiIcon = (ai: string): [LucideIcon, Tone] => AI_ICONS[ai] ?? [/^3\d{3}$/.test(ai) ? Weight : Tag, 'gray']
+/** Icona dell'AI nel suo colore (lo stesso del riepilogo e dei bit del tag). */
 export function AiIcon({ ai, size = 'sm' }: { ai: string; size?: 'xs' | 'sm' | 'md' }) {
-  const [icon, tone] = aiIcon(ai)
-  return <ConceptIcon icon={icon} tone={tone} size={size} />
+  const [icon] = aiIcon(ai)
+  return <ConceptIcon icon={icon} color={/^\d{2,4}$/.test(ai) ? aiColor(ai) : undefined} tone="gray" size={size} />
+}
+
+/** Codice dell'AI tra parentesi su fondo pieno del suo colore. */
+export function AiChip({ ai, className }: { ai: string; className?: string }) {
+  return (
+    <span className={cn('inline-flex h-6 shrink-0 items-center rounded-md px-1.5 font-mono text-[12px] font-semibold text-white', className)} style={{ background: aiColor(ai) }}>
+      ({ai})
+    </span>
+  )
 }
 export const OtherIcon = Ellipsis
 

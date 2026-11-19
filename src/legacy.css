@@ -252,7 +252,7 @@ dd {
 .workbench {
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(340px, 400px) minmax(0, 1fr);
+  grid-template-columns: minmax(420px, 500px) minmax(0, 1fr);
   align-items: start;
 }
 .pane-input {
@@ -286,13 +286,13 @@ dd {
   padding: 18px 0;
 }
 .group-label {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--ink);
 }
 .group-label .muted {
   font-weight: 400;
-  font-size: 13px;
+  font-size: 14px;
   margin-left: 4px;
 }
 .group-row {
@@ -316,7 +316,7 @@ dd {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--ink-2);
 }
@@ -2100,7 +2100,7 @@ table.epc-table {
 
 @media (max-width: 1180px) and (min-width: 901px) {
   .workbench {
-    grid-template-columns: minmax(300px, 340px) minmax(0, 1fr);
+    grid-template-columns: minmax(360px, 420px) minmax(0, 1fr);
   }
   .input-panel {
     padding: 8px 20px 28px;
@@ -2372,7 +2372,7 @@ table.epc-table {
   background: var(--surface);
   border-radius: 24px;
   box-shadow: 0 1px 2px rgba(0, 44, 108, 0.04), 0 4px 14px -6px rgba(0, 44, 108, 0.14);
-  padding: 8px 22px 22px;
+  padding: 8px 26px 26px;
 }
 .group-label {
   font-weight: 700;
@@ -2420,4 +2420,43 @@ table.epc-table {
 }
 .brand img {
   flex: none;
+}
+
+/* Schermata iniziale con solo il palco blu (decoder): nessuna fascia bianca sotto. */
+.start > .stage:last-child {
+  margin-bottom: -32px;
+}
+.start:has(> .stage:last-child) {
+  overflow: hidden;
+}
+
+/* Decoder senza un dato valido: il pannello occupa tutta la larghezza, gli esempi si dispongono a griglia. */
+.workbench.solo {
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+}
+.workbench.solo .pane-input {
+  position: static;
+  max-height: none;
+  min-height: 0;
+  overflow: visible;
+  padding: 24px 24px 0;
+}
+.workbench.solo .pane-results {
+  max-width: none;
+  padding: 16px 24px 48px;
+}
+.workbench.solo .pane-results:empty {
+  display: none;
+}
+.decode-samples {
+  grid-template-columns: minmax(0, 1fr);
+}
+.workbench.solo .decode-samples {
+  grid-template-columns: repeat(auto-fill, minmax(min(380px, 100%), 1fr));
+}
+@media (max-width: 680px) {
+  .workbench.solo .pane-input {
+    padding: 12px 12px 0;
+  }
 }

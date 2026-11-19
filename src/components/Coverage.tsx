@@ -4,6 +4,7 @@ import type { Analysis } from '../gs1/analyze'
 import type { SchemeResult } from '../gs1/epc'
 import { KIND_INFO } from '../gs1/schemes'
 import { aiLabel } from '../gs1/aiDictionary'
+import { aiColor } from '../colors'
 import { useMotion } from '../motion'
 import { t } from '../i18n'
 import { Badge } from '@/components/ui/badge'
@@ -82,7 +83,7 @@ export function TagContents({ analysis, result }: { analysis: Analysis; result: 
               </span>
               <span className="tc-text">
                 <span className="tc-label">
-                  {i.code && <b className="mono">{i.code}</b>} {i.label}
+                  {i.code && <b className="mono" style={{ color: aiColor(i.id) }}>{i.code}</b>} {i.label}
                   {i.state === 'out' && <span className="tc-strike" />}
                 </span>
                 {i.why && <span className="tc-why">{i.why}</span>}
@@ -129,7 +130,7 @@ export function CoverageMatrix({ analysis, scheme, onScheme }: { analysis: Analy
           {rows.map((row) => (
             <tr key={row.id}>
               <td>
-                {row.code && <b className="mono">{row.code} </b>}
+                {row.code && <b className="mono" style={{ color: aiColor(row.id) }}>{row.code} </b>}
                 {row.label}
               </td>
               {cols.map(({ r, items }) => {

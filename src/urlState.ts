@@ -10,7 +10,7 @@ import type { EncoderState } from './components/InputPanel'
 import type { Params } from './gs1/analyze'
 import { keyType } from './gs1/schemes'
 
-export const TABS = ['journey', 'rfid', 'barcode', 'formats', 'vbg'] as const
+export const TABS = ['barcode', 'vbg', 'epc', 'rfid', 'journey', 'formats'] as const
 export type Tab = (typeof TABS)[number]
 
 export type UrlState = { mode: Mode; encoder: EncoderState; decodeText: string; params: Params; scheme: string | null; open: Tab[] }

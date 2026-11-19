@@ -13,7 +13,7 @@ import { Formats } from './components/Formats'
 import { TagMemory } from './components/TagMemory'
 import { Carriers } from './components/Carriers'
 import { VbgCard } from './components/VbgCard'
-import { Readout } from './components/Readout'
+import { EpcPanel, Readout } from './components/Readout'
 import { StartPanel } from './components/StartPanel'
 import { t, useLang } from './i18n'
 import { LangSwitch } from './components/LangSwitch'
@@ -21,18 +21,26 @@ import { readUrlState, writeUrlState, type Tab } from './urlState'
 import { issuesOf, type IssueAction, type MissingField } from './issues'
 import { flash, intro } from './motion'
 import { Section, Sections, type Tone } from './components/Section'
-import { DigitalLinkIcon, MemoryIcon } from './components/Art'
+import { DigitalLinkIcon, MemoryIcon, RfidTagIcon } from './components/Art'
 import { epcBank, hexWord } from './gs1/rfid'
 import { CARRIERS } from './gs1/barcodes'
 
 export type Mode = 'encode' | 'decode'
 
-const SECTIONS: { id: Tab; label: string; icon: (p: { size?: number }) => ReactNode; tone: Tone }[] = [
-  { id: 'journey', get label() { return t('Passo per passo') }, icon: Route, tone: 'blue' },
-  { id: 'rfid', get label() { return t('Memoria del tag') }, icon: MemoryIcon, tone: 'teal' },
+type SectionDef = { id: Tab; label: string; icon: (p: { size?: number }) => ReactNode; tone: Tone }
+
+/** Per tutti: i simboli da stampare e la verifica sul registro GS1. */
+const EVERYDAY: SectionDef[] = [
   { id: 'barcode', get label() { return t('Barcode e QR') }, icon: Barcode, tone: 'forest' },
-  { id: 'formats', get label() { return t('Tutti i formati') }, icon: DigitalLinkIcon, tone: 'teal' },
   { id: 'vbg', label: 'Verified by GS1', icon: BadgeCheck, tone: 'blue' },
+]
+
+/** Per chi lavora con i tag RFID: l'EPC, la memoria, i passaggi e tutti i formati. */
+const TECHNICAL: SectionDef[] = [
+  { id: 'epc', get label() { return t('EPC del tag') }, icon: RfidTagIcon, tone: 'teal' },
+  { id: 'rfid', get label() { return t('Memoria del tag') }, icon: MemoryIcon, tone: 'teal' },
+  { id: 'journey', get label() { return t('Passo per passo') }, icon: Route, tone: 'blue' },
+  { id: 'formats', get label() { return t('Tutti i formati') }, icon: DigitalLinkIcon, tone: 'teal' },
 ]
 
 const STANDARDS = [
@@ -143,6 +151,8 @@ export default function App() {
   const active = scheme && familySchemes.includes(scheme) ? scheme : mode === 'decode' && analysis?.sourceScheme ? analysis.sourceScheme : family ? defaultScheme(family) : null
 
   const hasData = Boolean(analysis && (analysis.ais.length > 0 || analysis.error))
+  // Decoder senza un dato valido: il campo occupa tutta la pagina. Le due colonne arrivano col primo dato riconosciuto.
+  const solo = mode === 'decode' && !(hasData && analysis?.gs1 && !analysis.error)
 
   // Campi obbligatori della chiave ancora vuoti, quando l'utente ha già iniziato a scrivere.
   const missing = useMemo<MissingField[]>(() => {
@@ -257,7 +267,7 @@ export default function App() {
         <LangSwitch />
       </header>
 
-      <div className="workbench">
+      <div className={solo ? 'workbench solo' : 'workbench'}>
         <aside className="pane-input">
           <InputPanel
             mode={mode}
@@ -291,22 +301,27 @@ export default function App() {
           {hasData && analysis ? (
             <>
               <Readout analysis={analysis} scheme={active} busy={busy} vbg={vbgState} issues={issues} onAction={onAction} onTab={(x) => reveal(x as Tab)} />
-              {analysis.gs1 && (
-                <Sections title={t('Dettagli')}>
-                  {SECTIONS.map(({ id, label, icon: Icon, tone }) => (
-                    <Section key={id} id={id} tone={tone} icon={<Icon size={18} />} title={label} summary={summaryOf(id, analysis, active, vbgState)} open={open.includes(id)} onToggle={() => toggle(id)}>
-                      {id === 'journey' && <Journey analysis={analysis} scheme={active} onScheme={setScheme} />}
-                      {id === 'rfid' && <TagMemory analysis={analysis} scheme={active} onScheme={setScheme} />}
-                      {id === 'barcode' && <Carriers data={analysis.gs1!} />}
-                      {id === 'formats' && <Formats analysis={analysis} onDecode={loadInDecoder} />}
-                      {id === 'vbg' && <VbgCard ai={primary?.ai} state={vbgState} />}
-                    </Section>
-                  ))}
-                </Sections>
-              )}
+              {analysis.gs1 &&
+                [
+                  { title: t('Barcode e verifica'), list: EVERYDAY },
+                  { title: t('Dettagli tecnici per il tag RFID'), note: t('L’EPC, i bit nella memoria del tag e come si ottengono dai dati GS1.'), list: TECHNICAL },
+                ].map((g) => (
+                  <Sections key={g.title} title={g.title} note={g.note}>
+                    {g.list.map(({ id, label, icon: Icon, tone }) => (
+                      <Section key={id} id={id} tone={tone} icon={<Icon size={18} />} title={label} summary={summaryOf(id, analysis, active, vbgState)} open={open.includes(id)} onToggle={() => toggle(id)}>
+                        {id === 'epc' && <EpcPanel analysis={analysis} scheme={active} onTab={(x) => reveal(x as Tab)} />}
+                        {id === 'journey' && <Journey analysis={analysis} scheme={active} onScheme={setScheme} />}
+                        {id === 'rfid' && <TagMemory analysis={analysis} scheme={active} onScheme={setScheme} />}
+                        {id === 'barcode' && <Carriers data={analysis.gs1!} />}
+                        {id === 'formats' && <Formats analysis={analysis} onDecode={loadInDecoder} />}
+                        {id === 'vbg' && <VbgCard ai={primary?.ai} state={vbgState} />}
+                      </Section>
+                    ))}
+                  </Sections>
+                ))}
             </>
           ) : (
-            <StartPanel mode={mode} onSample={loadInDecoder} onExample={() => setEncoder(withExample(encoder))} />
+            mode === 'encode' && <StartPanel onExample={() => setEncoder(withExample(encoder))} />
           )}
         </main>
       </div>
@@ -356,6 +371,8 @@ function summaryOf(id: Tab, analysis: Analysis, scheme: string | null, vbg?: Ver
   const r = analysis.results.find((x) => x.scheme === scheme)
   const ok = r?.ok ? r : null
   switch (id) {
+    case 'epc':
+      return ok ? `${ok.scheme} · ${ok.hex}` : (analysis.rfidNote ?? t('Nessun EPC'))
     case 'journey':
       return analysis.gs1?.elementString ?? ''
     case 'rfid': {

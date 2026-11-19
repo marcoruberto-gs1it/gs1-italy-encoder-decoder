@@ -5,7 +5,7 @@ import { analyzeDecode, analyzeEncode } from '../gs1/analyze'
 import { Journey } from './Journey'
 import { TagMemory } from './TagMemory'
 import { Formats } from './Formats'
-import { Readout } from './Readout'
+import { EpcPanel, Readout } from './Readout'
 import { StartPanel } from './StartPanel'
 import { issuesOf } from '../issues'
 import { InputPanel } from './InputPanel'
@@ -30,10 +30,12 @@ test('i componenti si disegnano per ogni schema', async () => {
   for (const r of a.results) {
     const issues = issuesOf(a, r.scheme, 'encode', [])
     const html = renderToString(<Readout analysis={a} scheme={r.scheme} busy={false} onTab={noop} onAction={noop} issues={issues} vbg="loading" />)
-    if (r.ok) expect(html).toContain(r.uris.tag ?? a.gs1!.elementString)
-    else expect(html).toContain('non è utilizzabile')
+    if (r.ok) {
+      expect(html).toContain(r.hex)
+      expect(renderToString(<EpcPanel analysis={a} scheme={r.scheme} onTab={noop} />)).toContain(r.uris.tag ?? r.hex)
+    } else expect(html).toContain('non è utilizzabile')
   }
-  for (const mode of ['encode', 'decode'] as const) renderToString(<StartPanel mode={mode} onSample={noop} onExample={noop} />)
+  renderToString(<StartPanel onExample={noop} />)
   renderToString(<VbgCard ai="01" state={{ state: 'verified', name: 'Prodotto', links: [], licensee: { name: 'Azienda', prefix: '8001234' } }} />)
   const d = await analyzeDecode('nonsense!', params)
   expect(renderToString(<Readout analysis={d} scheme={null} busy={false} onTab={noop} onAction={noop} issues={issuesOf(d, null, 'decode', [])} />)).toContain('Formato non riconosciuto')

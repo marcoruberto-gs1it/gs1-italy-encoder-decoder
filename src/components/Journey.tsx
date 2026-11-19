@@ -9,6 +9,8 @@ import { checkDigitSteps } from '../gs1/checkDigit'
 import { BitMap, SchemeSelect } from './EpcParts'
 import { SCHEMES_BY_FAMILY } from '../gs1/schemes'
 import { CopyText } from './Copy'
+import { ColoredDl, ColoredEs } from './GsData'
+import { aiColor } from '../colors'
 import { BitsPanel, epcRuns } from './ColoredBits'
 import { CoverageMatrix, TagContents } from './Coverage'
 
@@ -85,8 +87,8 @@ export function Journey({ analysis, scheme, onScheme }: Props) {
         <p className="lead">{t('Ogni dato è preceduto dal suo Application Identifier (AI), che ne dice il significato e il formato.')}</p>
         <div className="es-line mono">
           {analysis.ais.map((a) => (
-            <span key={a.ai} className="es-ai" title={aiLabel(a.ai)}>
-              <b>({a.ai})</b>
+            <span key={a.ai} className="es-ai" title={aiLabel(a.ai)} style={{ color: aiColor(a.ai), borderColor: `${aiColor(a.ai)}55` }}>
+              <b style={{ color: aiColor(a.ai) }}>({a.ai})</b>
               {a.value}
             </span>
           ))}
@@ -94,7 +96,7 @@ export function Journey({ analysis, scheme, onScheme }: Props) {
         <div className="ai-legend">
           {analysis.ais.map((a) => (
             <span key={a.ai}>
-              <b>({a.ai})</b> {aiLabel(a.ai)}
+              <b style={{ color: aiColor(a.ai) }}>({a.ai})</b> {aiLabel(a.ai)}
             </span>
           ))}
         </div>
@@ -194,8 +196,8 @@ export function Journey({ analysis, scheme, onScheme }: Props) {
                     <BitsPanel label={t('EPC in binario · {bits} bit in {words} parole da 16, colorati per campo', { bits: result.bits.length, words: result.bits.length / 16 })} runs={epcRuns(result)} />
                     {result.uris.tag && <CopyText label="EPC Tag URI" value={result.uris.tag} />}
                     {result.uris.pure && <CopyText label="EPC Pure Identity URI" value={result.uris.pure} />}
-                    {result.uris.dl && <CopyText label={t('GS1 Digital Link ricostruito dal tag')} value={result.uris.dl} />}
-                    <CopyText label="Element string" value={gs1.elementString} />
+                    {result.uris.dl && <CopyText label={t('GS1 Digital Link ricostruito dal tag')} value={result.uris.dl} display={<ColoredDl url={result.uris.dl} />} />}
+                    <CopyText label="Element string" value={gs1.elementString} display={<ColoredEs ais={gs1.ais} />} />
                   </div>
                 </Step>
               </>
@@ -255,7 +257,7 @@ function Transform({ analysis, result }: { analysis: Analysis; result: Extract<S
           const inKey = analysis.key?.fields.some((f) => f.ai === a.ai)
           return (
             <div key={a.ai} className={`tf-ai ${inKey ? '' : 'plus'}`}>
-              <span className="ai-tag">({a.ai})</span>
+              <span className="ai-tag" style={{ color: '#fff', background: aiColor(a.ai) }}>({a.ai})</span>
               <span className="tf-label">{aiLabel(a.ai)}</span>
               <span className="mono">{a.value}</span>
               <span className="kind kind-plus">{inKey ? t('chiave') : '+AIDC'}</span>
