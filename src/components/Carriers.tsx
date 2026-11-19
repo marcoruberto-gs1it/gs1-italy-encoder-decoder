@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMotion } from '../motion'
 import { Download } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { CARRIERS, loadBwip, renderCarrier } from '../gs1/barcodes'
 import type { Gs1Data } from '../gs1/syntax'
-import { CopyText } from './ui'
+import { CopyText } from './Copy'
 import { t } from '../i18n'
 
 const GS = '<GS>'
@@ -59,9 +60,9 @@ export function Carriers({ data }: { data: Gs1Data }) {
             {r && 'svg' in r && (
               <footer>
                 <code className="mono small">{c.text(data)}</code>
-                <button type="button" className="ghost small" onClick={() => download(`${c.id}`, r.svg)}>
-                  <Download size={14} /> SVG
-                </button>
+                <Button variant="outline" size="xs" className="text-primary" aria-label={t('Scarica {name} in SVG', { name: c.name })} onClick={() => download(`${c.id}`, r.svg)}>
+                  <Download /> SVG
+                </Button>
               </footer>
             )}
           </article>

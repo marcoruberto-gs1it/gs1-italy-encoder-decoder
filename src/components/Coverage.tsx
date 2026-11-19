@@ -6,6 +6,7 @@ import { KIND_INFO } from '../gs1/schemes'
 import { aiLabel } from '../gs1/aiDictionary'
 import { useMotion } from '../motion'
 import { t } from '../i18n'
+import { Badge } from '@/components/ui/badge'
 
 type State = 'in' | 'out' | 'derived'
 type Item = { id: string; label: string; code?: string; state: State; why?: string }
@@ -64,11 +65,11 @@ export function TagContents({ analysis, result }: { analysis: Analysis; result: 
       <div className="tc-head">
         <strong>{t('Cosa contiene un tag {scheme}', { scheme: ok.scheme })}</strong>
         {lost.length > 0 ? (
-          <span className="pill bad">
+          <Badge variant="destructive" className="rounded-full">
             {lost.length === 1 ? t('1 dato GS1 resta fuori dal tag') : t('{n} dati GS1 restano fuori dal tag', { n: lost.length })}
-          </span>
+          </Badge>
         ) : (
-          <span className="pill ok">{t('Tutti i dati GS1 sono nel tag')}</span>
+          <Badge variant="success" className="rounded-full">{t('Tutti i dati GS1 sono nel tag')}</Badge>
         )}
       </div>
       <ul className="tc-list">

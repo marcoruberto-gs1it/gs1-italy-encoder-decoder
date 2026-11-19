@@ -1,4 +1,10 @@
-import { Hash, Plus, Trash2, Wand2, ArrowRightLeft, Play, BadgeCheck, Loader2, X } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { Hash, Plus, Trash2, Wand2, ArrowRightLeft, Play, BadgeCheck, Loader2, Eraser } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input, Textarea } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { Label, Separator, Tooltip } from '@/components/ui/misc'
+import { cn } from '@/lib/utils'
 import type { Mode } from '../App'
 import { prefixDigits, type Analysis, type Params } from '../gs1/analyze'
 import { KEY_TYPES, SCHEMES_BY_FAMILY, familyOf, filterOptions, keyType, kindOf, type Ai } from '../gs1/schemes'
@@ -24,6 +30,8 @@ type Props = {
   scheme: string | null
   setScheme: (s: string) => void
   onOpenInEncoder: () => void
+  onReset: () => void
+  canReset: boolean
 }
 
 /** AI aggiuntivi proposti per i dati +AIDC. */
@@ -76,20 +84,32 @@ export function InputPanel(p: Props) {
     const next = EXTRA_AIS.find((x) => !encoder.extras.some((e) => e.ai === x.ai) && !key.fields.some((f) => f.ai === x.ai))
     setEncoder({ ...encoder, extras: [...encoder.extras, { ai: next?.ai ?? '', value: '' }] })
   }
+  const title = mode === 'encode' ? t('Dati da codificare') : t('Dato da decodificare')
 
   return (
-    <section className="input-panel" aria-label={mode === 'encode' ? t('Dati da codificare') : t('Dato da decodificare')}>
+    <section className="input-panel" aria-label={title}>
+      <div className="flex items-center justify-between gap-3 pt-4 pb-2">
+        <h2 className="text-xs font-medium text-muted-foreground">{title}</h2>
+        <Tooltip content={t('Svuota i campi e riporta tag e parametri ai valori iniziali')}>
+          <Button variant="outline" size="sm" className="text-muted-foreground hover:border-destructive/30 hover:bg-destructive/5 hover:text-destructive" disabled={!p.canReset} onClick={p.onReset}>
+            <Eraser /> {t('Cancella i dati')}
+          </Button>
+        </Tooltip>
+      </div>
+
       {mode === 'encode' ? (
         <div className="encoder">
           <div className="field-group">
-            <label className="group-label" htmlFor="key-type">
+            <Label className="group-label" htmlFor="key-type">
               <span className="tile tile-xs tile-blue" aria-hidden>
                 <KeyDataIcon size={15} />
               </span>
               {t('Che cosa vuoi identificare?')}
-            </label>
+            </Label>
             <Dropdown id="key-type" value={encoder.keyId} onChange={chooseKey} options={KEY_TYPES.map((k) => ({ value: k.id, label: k.name, detail: k.description, aside: <span className="kind kind-legacy">{k.short}</span> }))} />
           </div>
+
+          <Separator />
 
           <div className="field-group">
             <div className="group-row">
@@ -99,9 +119,9 @@ export function InputPanel(p: Props) {
                 </span>
                 {t('I dati della chiave')}
               </span>
-              <button type="button" className="text-btn" onClick={useExample}>
-                <Play size={13} /> {t('Usa un esempio')}
-              </button>
+              <Button variant="link" size="sm" onClick={useExample}>
+                <Play /> {t('Usa un esempio')}
+              </Button>
             </div>
             <div className="key-fields">
               {key.fields.map((f) => {
@@ -111,29 +131,41 @@ export function InputPanel(p: Props) {
                 const lengthOk = f.ai === '01' ? [8, 12, 13, 14].includes(value.length) : value.length >= (f.checkDigitLength ?? 0)
                 const cdOk = f.checkDigitLength && /^\d+$/.test(cdPart) && cdPart.length === f.checkDigitLength && lengthOk ? isCheckDigitValid(cdPart) : undefined
                 const canComplete = f.checkDigitLength && /^\d+$/.test(value) && (f.ai === '01' ? [7, 11, 12, 13].includes(value.length) : value.length === f.checkDigitLength - 1)
+                const missing = !value && !f.optional && started
                 return (
-                  <label className={`field ${!value && !f.optional && started ? 'missing' : ''}`} key={f.ai}>
-                    <span className="field-label">
-                      <span className="ai-tag">AI {f.ai}</span> {f.label}
-                      {f.optional && <em> · {t('facoltativo')}</em>}
-                      {!value && !f.optional && started && <span className="req-tag">{t('obbligatorio')}</span>}
-                    </span>
-                    <div className="input-row">
-                      <input id={`ai-${f.ai}`} className="mono" aria-invalid={cdOk === false || undefined} value={value} placeholder={f.placeholder} spellCheck={false} autoComplete="off" onChange={(e) => setValue(f.ai, e.target.value.trim())} />
+                  <div className={cn('field', missing && 'missing')} key={f.ai}>
+                    <Label htmlFor={`ai-${f.ai}`} className="field-label">
+                      <Badge variant="secondary" className="font-mono">
+                        AI {f.ai}
+                      </Badge>
+                      {f.label}
+                      {f.optional && <span className="font-normal text-muted-foreground">· {t('facoltativo')}</span>}
+                      {missing && (
+                        <Badge variant="warning" className="ml-auto">
+                          {t('obbligatorio')}
+                        </Badge>
+                      )}
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input id={`ai-${f.ai}`} className="font-mono" aria-invalid={cdOk === false || missing || undefined} value={value} placeholder={f.placeholder} spellCheck={false} autoComplete="off" onChange={(e) => setValue(f.ai, e.target.value.trim())} />
                       {canComplete && (
-                        <button type="button" className="ghost small" onClick={() => setValue(f.ai, value + computeCheckDigit(f.ai === '01' ? value.padStart(13, '0') : value))} title={t('Aggiunge la cifra di controllo GS1')}>
-                          <Wand2 size={15} /> {t('Cifra di controllo')}
-                        </button>
+                        <Tooltip content={t('Aggiunge la cifra di controllo GS1')}>
+                          <Button variant="outline" className="h-10" onClick={() => setValue(f.ai, value + computeCheckDigit(f.ai === '01' ? value.padStart(13, '0') : value))}>
+                            <Wand2 /> {t('Cifra di controllo')}
+                          </Button>
+                        </Tooltip>
                       )}
                     </div>
-                    <span className={cdOk === false ? 'hint bad' : cdOk ? 'hint ok' : 'hint'}>
+                    <Hint tone={cdOk === false ? 'bad' : cdOk ? 'ok' : undefined}>
                       {cdOk === false ? t('Cifra di controllo errata: dovrebbe essere {cd}', { cd: computeCheckDigit(cdPart.slice(0, -1)) }) : cdOk ? `✓ ${t('Cifra di controllo corretta')}` : f.hint}
-                    </span>
-                  </label>
+                    </Hint>
+                  </div>
                 )
               })}
             </div>
           </div>
+
+          <Separator />
 
           <div className="field-group">
             <span className="group-label">
@@ -142,39 +174,40 @@ export function InputPanel(p: Props) {
               </span>
               {t('Dati aggiuntivi')} <span className="muted">{t('facoltativi')}</span>
             </span>
-            <div className="extras">
+            <div className="flex flex-col gap-2">
               {encoder.extras.map((x, i) => (
-                <div className="extra" key={i}>
+                <div className="flex items-center gap-2" key={i}>
                   <Dropdown
                     ariaLabel="Application Identifier"
+                    className="w-[46%] shrink-0"
                     value={EXTRA_AIS.some((e) => e.ai === x.ai) ? x.ai : 'altro'}
                     onChange={(v) => setExtra(i, { ai: v === 'altro' ? '' : v })}
                     options={[...EXTRA_AIS.map((e) => ({ value: e.ai, label: aiLabel(e.ai), aside: <span className="ai-tag">AI {e.ai}</span> })), { value: 'altro', label: t('Altro AI…'), detail: t('Scrivi il numero dell’AI') }]}
                   />
-                  {!EXTRA_AIS.some((e) => e.ai === x.ai) && <input className="mono ai-input" aria-label="Application Identifier" inputMode="numeric" maxLength={4} value={x.ai} placeholder="AI" onChange={(e) => setExtra(i, { ai: e.target.value.replace(/\D/g, '') })} />}
-                  <input id={`ai-${x.ai}`} className="mono" aria-label={aiLabel(x.ai) || x.ai} value={x.value} placeholder={EXTRA_AIS.find((e) => e.ai === x.ai)?.placeholder ?? 'valore'} onChange={(e) => setExtra(i, { value: e.target.value })} />
-                  <button type="button" className="icon-btn soft" aria-label={t('Rimuovi')} onClick={() => setEncoder({ ...encoder, extras: encoder.extras.filter((_, k) => k !== i) })}>
-                    <Trash2 size={16} />
-                  </button>
+                  {!EXTRA_AIS.some((e) => e.ai === x.ai) && <Input className="w-16 shrink-0 px-2 font-mono" aria-label="Application Identifier" inputMode="numeric" maxLength={4} value={x.ai} placeholder="AI" onChange={(e) => setExtra(i, { ai: e.target.value.replace(/\D/g, '') })} />}
+                  <Input id={`ai-${x.ai}`} className="font-mono" aria-label={aiLabel(x.ai) || x.ai} value={x.value} placeholder={EXTRA_AIS.find((e) => e.ai === x.ai)?.placeholder ?? 'valore'} onChange={(e) => setExtra(i, { value: e.target.value })} />
+                  <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" aria-label={t('Rimuovi')} onClick={() => setEncoder({ ...encoder, extras: encoder.extras.filter((_, k) => k !== i) })}>
+                    <Trash2 />
+                  </Button>
                 </div>
               ))}
-              <button type="button" className="ghost small" onClick={addExtra}>
-                <Plus size={15} /> {t('Aggiungi un AI')}
-              </button>
+              <Button variant="outline" size="sm" className="self-start border-dashed text-primary shadow-none" onClick={addExtra}>
+                <Plus /> {t('Aggiungi un AI')}
+              </Button>
             </div>
           </div>
         </div>
       ) : (
-        <div className="decoder">
-          <label className="group-label" htmlFor="decode-input">
+        <div className="decoder field-group">
+          <Label className="group-label" htmlFor="decode-input">
             <span className="tile tile-xs tile-teal" aria-hidden>
               <ReaderIcon size={15} />
             </span>
             {t('Incolla qualsiasi rappresentazione GS1')}
-          </label>
-          <textarea
+          </Label>
+          <Textarea
             id="decode-input"
-            className="mono"
+            className="font-mono text-[13px] leading-relaxed break-all"
             aria-invalid={Boolean(analysis?.error) || undefined}
             rows={3}
             value={p.decodeText}
@@ -182,18 +215,15 @@ export function InputPanel(p: Props) {
             placeholder={t('EPC letto dal tag in esadecimale o binario, urn:epc:…, https://id.gs1.org/01/…, (01)…(21)…, dati del lettore o un GTIN')}
             onChange={(e) => p.setDecodeText(e.target.value)}
           />
-          {p.decodeText && (
-            <button type="button" className="text-btn clear-btn" onClick={() => p.setDecodeText('')}>
-              <X size={14} /> {t('Svuota')}
-            </button>
-          )}
           {analysis?.detected && (
-            <div className="detected">
-              <span className="pill ok">{t('Riconosciuto: {what}', { what: analysis.detected })}</span>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <Badge variant="success" className="h-auto py-1 whitespace-normal">
+                <BadgeCheck /> {t('Riconosciuto: {what}', { what: analysis.detected })}
+              </Badge>
               {analysis.key && (
-                <button type="button" className="text-btn" onClick={p.onOpenInEncoder}>
-                  <ArrowRightLeft size={14} /> {t('Modifica nell’encoder')}
-                </button>
+                <Button variant="link" size="sm" onClick={p.onOpenInEncoder}>
+                  <ArrowRightLeft /> {t('Modifica nell’encoder')}
+                </Button>
               )}
             </div>
           )}
@@ -201,47 +231,61 @@ export function InputPanel(p: Props) {
       )}
 
       {schemes.length > 0 && (
-        <div className="field-group tag-params">
-          <label className="group-label" htmlFor="tag-type">
-            <span className="tile tile-xs tile-teal" aria-hidden>
-              <RfidTagIcon size={15} />
-            </span>
-            {t('Il tag RFID')}
-          </label>
-          <span className="field-label">{t('Tipo di tag (schema EPC)')}</span>
-          <SchemeSelect id="tag-type" quiet schemes={schemes} results={analysis?.results ?? []} scheme={p.scheme} onScheme={p.setScheme} />
-          <div className="params">
-            <label className="field">
+        <>
+          <Separator />
+          <div className="field-group tag-params">
+            <Label className="group-label" htmlFor="tag-type">
+              <span className="tile tile-xs tile-teal" aria-hidden>
+                <RfidTagIcon size={15} />
+              </span>
+              {t('Il tag RFID')}
+            </Label>
+            <div className="field">
+              <span className="field-label">{t('Tipo di tag (schema EPC)')}</span>
+              <SchemeSelect id="tag-type" quiet schemes={schemes} results={analysis?.results ?? []} scheme={p.scheme} onScheme={p.setScheme} />
+            </div>
+            <div className="field">
               <span className="field-label">Filter value</span>
               {tagFilter !== null ? (
                 <>
-                  <div className="locked-value">
-                    <BadgeCheck size={17} /> <span>{filterOptions(familyOf(family!)).find((o) => o.value === tagFilter)?.label ?? tagFilter}</span>
-                  </div>
-                  <span className="hint ok">{t('Letto dal tag.')}</span>
+                  <Locked>
+                    <BadgeCheck /> <span>{filterOptions(familyOf(family!)).find((o) => o.value === tagFilter)?.label ?? tagFilter}</span>
+                  </Locked>
+                  <Hint tone="ok">{t('Letto dal tag.')}</Hint>
                 </>
               ) : (
                 <Dropdown ariaLabel="Filter value" value={String(params.filter)} onChange={(v) => setParams({ ...params, filter: Number(v) })} options={filterOptions(familyOf(family!)).map((o) => ({ value: String(o.value), label: o.label }))} />
               )}
-            </label>
+            </div>
             {kind === 'legacy' && (
-              <div className={`field ${!analysis?.gcp.length && !analysis?.gcp.pending && !params.gcpLength ? 'needs' : ''}`}>
+              <div className="field">
                 <span className="field-label">GS1 Company Prefix</span>
                 <GcpField analysis={analysis} params={params} setParams={setParams} />
               </div>
             )}
             {kind === 'plusplus' && (
-              <label className="field">
-                <span className="field-label">{t('Dominio del GS1 Digital Link')}</span>
-                <input className="mono" value={fromTag?.hostname && analysis ? analysis.params.hostname : params.hostname} readOnly={fromTag?.hostname} maxLength={253} placeholder="id.gs1.org" onChange={(e) => setParams({ ...params, hostname: e.target.value.trim().replace(/^https?:\/\//, '').replace(/\/.*$/, '') })} />
-                <span className="hint">{fromTag?.hostname ? t('Letto dal tag.') : t('Scritto compresso nel tag: il tag ricostruisce il link del brand.')}</span>
-              </label>
+              <div className="field">
+                <Label htmlFor="dl-host" className="field-label">
+                  {t('Dominio del GS1 Digital Link')}
+                </Label>
+                <Input id="dl-host" className="font-mono" value={fromTag?.hostname && analysis ? analysis.params.hostname : params.hostname} readOnly={fromTag?.hostname} maxLength={253} placeholder="id.gs1.org" onChange={(e) => setParams({ ...params, hostname: e.target.value.trim().replace(/^https?:\/\//, '').replace(/\/.*$/, '') })} />
+                <Hint tone={fromTag?.hostname ? 'ok' : undefined}>{fromTag?.hostname ? t('Letto dal tag.') : t('Scritto compresso nel tag: il tag ricostruisce il link del brand.')}</Hint>
+              </div>
             )}
           </div>
-        </div>
+        </>
       )}
     </section>
   )
+}
+
+function Hint({ tone, children }: { tone?: 'ok' | 'bad'; children: ReactNode }) {
+  return <p className={cn('hint text-xs leading-snug text-muted-foreground', tone === 'ok' && 'text-success', tone === 'bad' && 'font-medium text-destructive')}>{children}</p>
+}
+
+/** Valore non modificabile perché letto dal tag o da Verified by GS1. */
+function Locked({ children }: { children: ReactNode }) {
+  return <div className="flex min-h-10 items-center gap-2 rounded-md border border-success/25 bg-[#f0faf4] px-3 py-2 text-sm font-medium text-success [&>svg]:size-4 [&>svg]:shrink-0">{children}</div>
 }
 
 /** Il GS1 Company Prefix arriva da Verified by GS1 (o dal tag letto); se manca lo sceglie l'utente. */
@@ -251,22 +295,22 @@ function GcpField({ analysis, params, setParams }: { analysis: Analysis | null; 
   if (gcp?.source === 'Verified by GS1' || gcp?.source === 'tag') {
     return (
       <>
-        <div className="locked-value">
-          <BadgeCheck size={17} />
-          <span className="mono">{digits?.slice(0, gcp.length!)}</span>
-          <span className="muted">· {t('{n} cifre', { n: gcp.length! })}</span>
-        </div>
-        <span className="hint ok">{gcp.source === 'tag' ? t('Letto dalla partizione del tag.') : t('Dalla licenza registrata su Verified by GS1.')}</span>
+        <Locked>
+          <BadgeCheck />
+          <span className="font-mono">{digits?.slice(0, gcp.length!)}</span>
+          <span className="font-normal text-muted-foreground">· {t('{n} cifre', { n: gcp.length! })}</span>
+        </Locked>
+        <Hint tone="ok">{gcp.source === 'tag' ? t('Letto dalla partizione del tag.') : t('Dalla licenza registrata su Verified by GS1.')}</Hint>
       </>
     )
   }
   if (gcp?.pending) {
     return (
       <>
-        <div className="locked-value">
+        <div className="flex min-h-10 items-center gap-2 rounded-md border bg-muted px-3 py-2 text-sm text-primary">
           <LottieIcon name="scan" size={22} loop className="lottie-current" fallback={<Loader2 size={17} className="spin" />} /> {t('Verifica su Verified by GS1…')}
         </div>
-        <span className="hint">{t('La lunghezza arriva dalla licenza del titolare.')}</span>
+        <Hint>{t('La lunghezza arriva dalla licenza del titolare.')}</Hint>
       </>
     )
   }
@@ -277,12 +321,11 @@ function GcpField({ analysis, params, setParams }: { analysis: Analysis | null; 
         ariaLabel={t('Lunghezza del GS1 Company Prefix')}
         value={params.gcpLength ? String(params.gcpLength) : ''}
         placeholder={t('Scegli la lunghezza…')}
+        className={params.gcpLength ? undefined : 'border-brand ring-[3px] ring-brand/15'}
         onChange={(v) => setParams({ ...params, gcpLength: Number(v) })}
         options={[6, 7, 8, 9, 10, 11, 12].map((n) => ({ value: String(n), label: t('{n} cifre', { n }), aside: digits && digits.length >= n ? <span className="mono muted">{digits.slice(0, n)}</span> : undefined }))}
       />
-      <span className={params.gcpLength ? 'hint' : 'hint bad'}>
-        {params.gcpLength ? t('Scelta da te: Verified by GS1 non la fornisce per questo codice.') : t('Verified by GS1 non la fornisce: sceglila per gli schemi TDS 1.x.')}
-      </span>
+      <Hint tone={params.gcpLength ? undefined : 'bad'}>{params.gcpLength ? t('Scelta da te: Verified by GS1 non la fornisce per questo codice.') : t('Verified by GS1 non la fornisce: sceglila per gli schemi TDS 1.x.')}</Hint>
     </>
   )
 }

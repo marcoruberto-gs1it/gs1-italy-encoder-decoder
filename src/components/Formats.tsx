@@ -1,10 +1,12 @@
 import { ScanLine } from 'lucide-react'
 import type { Analysis } from '../gs1/analyze'
 import { KIND_INFO } from '../gs1/schemes'
-import { CopyButton, CopyText } from './ui'
+import { CopyButton, CopyText } from './Copy'
 import { ColoredBits, epcRuns } from './ColoredBits'
 import { CoverageMatrix } from './Coverage'
 import { t } from '../i18n'
+import { Button } from '@/components/ui/button'
+import { Tooltip } from '@/components/ui/misc'
 
 /** Tutte le rappresentazioni degli stessi dati, una sotto l'altra. */
 export function Formats({ analysis, onDecode }: { analysis: Analysis; onDecode: (text: string) => void }) {
@@ -65,9 +67,11 @@ export function Formats({ analysis, onDecode }: { analysis: Analysis; onDecode: 
                         <>
                           <CopyButton value={r.hex} />
                           <CopyButton value={r.bits} label={t('Copia in binario')} icon="bin" />
-                          <button className="icon-btn" title={t('Decodifica questo EPC')} aria-label={t('Decodifica questo EPC')} onClick={() => onDecode(r.hex)}>
-                            <ScanLine size={16} />
-                          </button>
+                          <Tooltip content={t('Decodifica questo EPC')}>
+                            <Button variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label={t('Decodifica questo EPC')} onClick={() => onDecode(r.hex)}>
+                              <ScanLine />
+                            </Button>
+                          </Tooltip>
                         </>
                       )}
                     </td>

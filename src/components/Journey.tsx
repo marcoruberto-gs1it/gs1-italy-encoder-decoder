@@ -8,7 +8,7 @@ import { aiLabel } from '../gs1/aiDictionary'
 import { checkDigitSteps } from '../gs1/checkDigit'
 import { BitMap, SchemeSelect } from './EpcParts'
 import { SCHEMES_BY_FAMILY } from '../gs1/schemes'
-import { CopyText } from './ui'
+import { CopyText } from './Copy'
 import { BitsPanel, epcRuns } from './ColoredBits'
 import { CoverageMatrix, TagContents } from './Coverage'
 

@@ -1,15 +1,16 @@
-import { LANGS, setLang, useLang } from '../i18n'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { LANGS, setLang, useLang, type Lang } from '../i18n'
 
 /** Scelta della lingua (IT / EN), come in gs1-italy-vbg-app: la scelta viene ricordata. */
 export function LangSwitch() {
   const current = useLang()
   return (
-    <div className="lang-switch" role="radiogroup" aria-label="Lingua / Language">
+    <ToggleGroup type="single" value={current} onValueChange={(v) => v && setLang(v as Lang)} aria-label="Lingua / Language" className="lang-switch">
       {LANGS.map((l) => (
-        <button key={l.id} type="button" role="radio" lang={l.id} aria-checked={current === l.id} aria-label={l.label} title={l.label} className={current === l.id ? 'is-active' : ''} onClick={() => setLang(l.id)}>
+        <ToggleGroupItem key={l.id} value={l.id} lang={l.id} aria-label={l.label} title={l.label} className="h-7 px-2.5 text-xs font-semibold">
           {l.short}
-        </button>
+        </ToggleGroupItem>
       ))}
-    </div>
+    </ToggleGroup>
   )
 }

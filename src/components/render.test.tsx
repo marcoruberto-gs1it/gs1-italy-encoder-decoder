@@ -38,7 +38,7 @@ test('i componenti si disegnano per ogni schema', async () => {
   const d = await analyzeDecode('nonsense!', params)
   expect(renderToString(<Readout analysis={d} scheme={null} busy={false} onTab={noop} onAction={noop} issues={issuesOf(d, null, 'decode', [])} />)).toContain('Formato non riconosciuto')
   for (const mode of ['encode', 'decode'] as const)
-    renderToString(<InputPanel mode={mode} encoder={{ keyId: 'sgtin', values: { '01': '0800123456789', '21': '1' }, extras: [{ ai: '17', value: '' }] }} setEncoder={noop} decodeText="" setDecodeText={noop} params={{ ...params }} setParams={noop} analysis={a} scheme="SGTIN+" setScheme={noop} onOpenInEncoder={noop} />)
+    renderToString(<InputPanel mode={mode} encoder={{ keyId: 'sgtin', values: { '01': '0800123456789', '21': '1' }, extras: [{ ai: '17', value: '' }] }} setEncoder={noop} decodeText="" setDecodeText={noop} params={{ ...params }} setParams={noop} analysis={a} scheme="SGTIN+" setScheme={noop} onOpenInEncoder={noop} onReset={noop} canReset />)
   expect(renderToString(<App />)).toContain('Encoder')
 })
 

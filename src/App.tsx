@@ -1,5 +1,8 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { ArrowUpRight, Barcode, BadgeCheck, ChevronDown, PenLine, Route, ScanLine } from 'lucide-react'
+import { AlertTriangle, ArrowUpRight, Barcode, BadgeCheck, ChevronDown, PenLine, RotateCw, Route, ScanLine } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { Alert, AlertDescription, AlertTitle, Kbd, TooltipProvider } from '@/components/ui/misc'
 import logo from './assets/gs1-italy-logo.png'
 import { analyzeDecode, analyzeEncode, type Analysis, type Params } from './gs1/analyze'
 import { KEY_TYPES, SCHEMES_BY_FAMILY, keyType, type Ai } from './gs1/schemes'
@@ -17,7 +20,7 @@ import { LangSwitch } from './components/LangSwitch'
 import { readUrlState, writeUrlState, type Tab } from './urlState'
 import { issuesOf, type IssueAction, type MissingField } from './issues'
 import { flash, intro } from './motion'
-import { Section, type Tone } from './components/Section'
+import { Section, Sections, type Tone } from './components/Section'
 import { DigitalLinkIcon, MemoryIcon } from './components/Art'
 import { epcBank, hexWord } from './gs1/rfid'
 import { CARRIERS } from './gs1/barcodes'
@@ -219,6 +222,20 @@ export default function App() {
     requestAnimationFrame(() => document.getElementById(`sec-${id}`)?.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }))
   }
 
+  // Reimposta: svuota i dati del modo corrente e riporta tag e parametri ai valori iniziali.
+  const canReset =
+    (mode === 'encode' ? Object.values(encoder.values).some((v) => v.trim()) || encoder.extras.length > 0 : decodeText.trim() !== '') ||
+    scheme !== null ||
+    params.gcpLength !== null ||
+    params.hostname !== 'id.gs1.org'
+  const reset = () => {
+    if (mode === 'encode') setEncoder({ keyId: encoder.keyId, values: {}, extras: [] })
+    else setDecodeText('')
+    setParams({ filter: mode === 'encode' && encoder.keyId !== 'sgtin' ? 0 : 1, hostname: 'id.gs1.org', gcpLength: null })
+    setScheme(null)
+    requestAnimationFrame(() => (mode === 'decode' ? document.getElementById('decode-input') : document.querySelector<HTMLElement>('.key-fields input'))?.focus())
+  }
+
   const loadInDecoder = (text: string) => {
     setDecodeText(text)
     setMode('decode')
@@ -226,6 +243,7 @@ export default function App() {
   }
 
   return (
+    <TooltipProvider>
     <div className="app" ref={appRef}>
       <header className="topbar">
         <a className="brand" href={import.meta.env.BASE_URL} title={t('Ricomincia da capo')}>
@@ -234,7 +252,7 @@ export default function App() {
         </a>
         <ModeSwitch mode={mode} setMode={setMode} />
         <p className="topbar-hint">
-          {t('Incolla un EPC ovunque per decodificarlo')} <kbd>Ctrl</kbd>+<kbd>V</kbd>
+          {t('Incolla un EPC ovunque per decodificarlo')} <Kbd>Ctrl</Kbd> <Kbd>V</Kbd>
         </p>
         <LangSwitch />
       </header>
@@ -253,24 +271,28 @@ export default function App() {
             scheme={active}
             setScheme={setScheme}
             onOpenInEncoder={openInEncoder}
+            onReset={reset}
+            canReset={canReset}
           />
         </aside>
 
         <main className="pane-results" id="results" aria-busy={busy}>
           {loadError && (
-            <div className="load-error" role="alert">
-              <p>{t('Non è stato possibile caricare i motori GS1. Controlla la connessione e riprova.')}</p>
-              <button type="button" className="ghost small" onClick={() => setRetry((n) => n + 1)}>
-                {t('Riprova')}
-              </button>
-            </div>
+            <Alert variant="destructive" role="alert">
+              <AlertTriangle />
+              <AlertTitle>{t('Non è stato possibile caricare i motori GS1. Controlla la connessione e riprova.')}</AlertTitle>
+              <AlertDescription>
+                <Button variant="outline" size="sm" className="mt-2" onClick={() => setRetry((n) => n + 1)}>
+                  <RotateCw /> {t('Riprova')}
+                </Button>
+              </AlertDescription>
+            </Alert>
           )}
           {hasData && analysis ? (
             <>
               <Readout analysis={analysis} scheme={active} busy={busy} vbg={vbgState} issues={issues} onAction={onAction} onTab={(x) => reveal(x as Tab)} />
               {analysis.gs1 && (
-                <div className="sections">
-                  <h2 className="sections-title">{t('Dettagli')}</h2>
+                <Sections title={t('Dettagli')}>
                   {SECTIONS.map(({ id, label, icon: Icon, tone }) => (
                     <Section key={id} id={id} tone={tone} icon={<Icon size={18} />} title={label} summary={summaryOf(id, analysis, active, vbgState)} open={open.includes(id)} onToggle={() => toggle(id)}>
                       {id === 'journey' && <Journey analysis={analysis} scheme={active} onScheme={setScheme} />}
@@ -280,7 +302,7 @@ export default function App() {
                       {id === 'vbg' && <VbgCard ai={primary?.ai} state={vbgState} />}
                     </Section>
                   ))}
-                </div>
+                </Sections>
               )}
             </>
           ) : (
@@ -312,20 +334,20 @@ export default function App() {
         </address>
       </footer>
     </div>
+    </TooltipProvider>
   )
 }
 
 function ModeSwitch({ mode, setMode }: { mode: Mode; setMode: (m: Mode) => void }) {
   return (
-    <div className="mode-switch" role="radiogroup" aria-label={t('Modalità')} data-mode={mode}>
-      <span className="mode-thumb" aria-hidden />
-      <button type="button" role="radio" aria-checked={mode === 'encode'} onClick={() => setMode('encode')}>
-        <PenLine size={15} /> {t('Codifica')}
-      </button>
-      <button type="button" role="radio" aria-checked={mode === 'decode'} onClick={() => setMode('decode')}>
-        <ScanLine size={15} /> {t('Decodifica')}
-      </button>
-    </div>
+    <ToggleGroup type="single" value={mode} onValueChange={(v) => v && setMode(v as Mode)} aria-label={t('Modalità')} className="mode-switch">
+      <ToggleGroupItem value="encode" className="h-9 px-4">
+        <PenLine /> {t('Codifica')}
+      </ToggleGroupItem>
+      <ToggleGroupItem value="decode" className="h-9 px-4">
+        <ScanLine /> {t('Decodifica')}
+      </ToggleGroupItem>
+    </ToggleGroup>
   )
 }
 

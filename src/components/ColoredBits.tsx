@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { SchemeResult } from '../gs1/epc'
 import type { EpcBank } from '../gs1/rfid'
 import { segmentColors, CRC_COLOR, PC_COLOR } from '../colors'
-import { CopyButton } from './ui'
+import { CopyButton } from './Copy'
 import { t } from '../i18n'
 
 /** Un blocco di bit consecutivi con lo stesso significato. */

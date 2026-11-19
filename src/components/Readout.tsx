@@ -1,5 +1,11 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { AlertOctagon, AlertTriangle, ArrowRight, BadgeCheck, Binary, CheckCircle2, Filter, Fingerprint, Layers, Link2, Loader2 } from 'lucide-react'
+import { AlertOctagon, AlertTriangle, ArrowRight, BadgeCheck, Binary, CheckCircle2, ChevronRight, Filter, Fingerprint, Layers, Link2, Loader2 } from 'lucide-react'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Alert, AlertTitle } from '@/components/ui/misc'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { cn } from '@/lib/utils'
 import type { ReactNode } from 'react'
 import { DigitalLinkIcon, KeyDataIcon, RfidTagIcon } from './Art'
 import type { Analysis } from '../gs1/analyze'
@@ -9,7 +15,7 @@ import { KIND_INFO, filterMeaning, familyOf } from '../gs1/schemes'
 import { segmentColors } from '../colors'
 import type { Issue, IssueAction } from '../issues'
 import { alertIn, rollIn, waveIn } from '../motion'
-import { CopyButton } from './ui'
+import { CopyButton } from './Copy'
 import { LottieIcon } from './LottieIcon'
 import { t } from '../i18n'
 
@@ -37,9 +43,9 @@ export function Readout({ analysis, scheme, busy, vbg, issues, onTab, onAction }
   const warn = issues.length > 0
 
   return (
-    <div className="readout-wrap">
+    <div className="flex flex-col gap-3.5">
       {issues.length > 0 && (
-        <ul className="issues" aria-live="polite">
+        <ul className="issues flex flex-col gap-2.5" aria-live="polite">
           {issues.map((i) => (
             <IssueRow key={i.id + i.title} issue={i} onAction={onAction} />
           ))}
@@ -47,26 +53,26 @@ export function Readout({ analysis, scheme, busy, vbg, issues, onTab, onAction }
       )}
 
       {!analysis.error && (
-        <section className={busy ? 'readout busy' : 'readout'}>
-          <header className="ro-head">
-            <div className="ro-title">
-              <span className={`badge ${warn ? 'badge-warn' : 'badge-ok'}`}>
-                {warn ? <AlertTriangle size={15} /> : <LottieIcon name="check" size={17} replay={ok?.hex ?? gs1?.elementString} className="lottie-current" fallback={<CheckCircle2 size={15} />} />}
+        <Card className={cn('readout gap-0 overflow-hidden py-0', busy && 'busy')}>
+          <header className="ro-head flex flex-wrap items-center justify-between gap-3 px-8 pt-6 phone:px-4 phone:pt-4">
+            <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+              <Badge variant={warn ? 'warning' : 'success'} className="h-7 gap-1.5 rounded-full px-3 text-sm font-semibold">
+                {warn ? <AlertTriangle className="size-4!" /> : <LottieIcon name="check" size={17} replay={ok?.hex ?? gs1?.elementString} className="lottie-current" fallback={<CheckCircle2 className="size-4!" />} />}
                 {warn ? t('Da verificare') : t('Valido')}
-              </span>
-              <h2>{analysis.key ? analysis.key.name : t('Dati GS1 validi')}</h2>
-              {busy && <Loader2 size={16} className="spin" aria-label={t('Calcolo in corso')} />}
+              </Badge>
+              <h2 className="text-[15px] font-medium text-muted-foreground">{analysis.key ? analysis.key.name : t('Dati GS1 validi')}</h2>
+              {busy && <Loader2 size={16} className="spin text-muted-foreground" aria-label={t('Calcolo in corso')} />}
             </div>
-            <div className="ro-actions">
+            <div className="ro-actions flex gap-1.5 phone:w-full phone:*:flex-1">
               {ok && <CopyButton value={ok.hex} label={t('Copia l’EPC in esadecimale')} text="HEX" />}
               {ok && <CopyButton value={ok.bits} label={t('Copia in binario')} text="BIN" />}
-              <CopyButton value={() => window.location.href} label={t('Copia il link a questa decodifica')} text={t('Link')} icon={<Link2 size={15} />} />
+              <CopyButton value={() => window.location.href} label={t('Copia il link a questa decodifica')} text={t('Link')} icon={<Link2 />} />
             </div>
           </header>
 
-          {ok ? <HexView result={ok} /> : <p className="ro-none">{t('Nessun EPC da mostrare: vedi le segnalazioni qui sopra.')}</p>}
+          {ok ? <HexView result={ok} /> : <p className="px-8 pt-5 pb-2 text-[15px] text-muted-foreground phone:px-4">{t('Nessun EPC da mostrare: vedi le segnalazioni qui sopra.')}</p>}
 
-          <dl className="ro-stats">
+          <dl className="mx-8 mt-5 mb-6 grid grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-2 border-t pt-5 phone:mx-4 phone:grid-cols-2 phone:gap-1">
             <Stat icon={<RfidTagIcon size={18} />} tile="teal" label={t('Schema')} value={ok ? ok.scheme : '—'} note={ok ? KIND_INFO[ok.kind].label : undefined} />
             <Stat icon={<Binary size={18} />} tile="teal" label={t('Lunghezza')} value={ok ? t('{bits} bit', { bits: ok.length }) : '—'} note={ok ? t('{words} parole da 16 bit', { words: Math.ceil(ok.length / 16) }) : undefined} />
             <Stat icon={<Filter size={17} />} tile="blue" label="Filter" value={String(analysis.params.filter)} note={ok ? filterMeaning(familyOf(ok.scheme), analysis.params.filter) : undefined} />
@@ -86,24 +92,24 @@ export function Readout({ analysis, scheme, busy, vbg, issues, onTab, onAction }
             )}
           </dl>
 
-          <table className="ro-table">
-            <thead>
-              <tr>
-                <th scope="col">{t('Rappresentazione')}</th>
-                <th scope="col">{t('Valore')}</th>
-                <th scope="col">
+          <Table className="border-t">
+            <TableHeader className="phone:hidden">
+              <TableRow className="hover:bg-transparent">
+                <TableHead scope="col" className="pl-8">{t('Rappresentazione')}</TableHead>
+                <TableHead scope="col">{t('Valore')}</TableHead>
+                <TableHead scope="col" className="pr-8">
                   <span className="visually-hidden">{t('Copia')}</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {ok?.uris.tag && <Row icon={<RfidTagIcon size={17} />} tile="teal" label="EPC Tag URI" note={t('Campi del tag in testo')} value={ok.uris.tag} />}
               {ok?.uris.pure && <Row icon={<Fingerprint size={17} />} tile="blue" label="EPC Pure Identity URI" note={t('L’identità, usata in EPCIS')} value={ok.uris.pure} />}
               {gs1?.dl && <Row icon={<DigitalLinkIcon size={17} />} tile="forest" label="GS1 Digital Link" note={t('La chiave come link web')} value={ok?.uris.dl ?? gs1.dl} />}
               {gs1 && <Row icon={<KeyDataIcon size={17} />} tile="blue" label="Element string" note={t('Con gli AI, come nei barcode')} value={gs1.elementString} />}
-            </tbody>
-          </table>
-        </section>
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   )
@@ -114,71 +120,76 @@ type TileTone = 'blue' | 'teal' | 'forest' | 'orange' | 'red' | 'gray'
 function Stat({ icon, tile, label, value, note, tone, onClick }: { icon: ReactNode; tile: TileTone; label: string; value: string; note?: string; tone?: 'ok' | 'warn' | 'bad'; onClick?: () => void }) {
   const body = (
     <>
-      <span className={`tile tile-${tile}`} aria-hidden>
+      <span className={`tile tile-${tile} phone:hidden!`} aria-hidden>
         {icon}
       </span>
-      <span className="stat-text">
-        <dt>{label}</dt>
-        <dd className={tone ? `tone-${tone}` : undefined}>{value}</dd>
-        {note && <dd className="stat-note">{note}</dd>}
+      <span className="flex min-w-0 flex-col gap-0.5">
+        <dt className="text-[13px] text-muted-foreground">{label}</dt>
+        <dd className={cn('text-lg leading-tight font-semibold tracking-tight', tone === 'ok' && 'text-success', tone === 'warn' && 'text-warning', tone === 'bad' && 'text-destructive')}>{value}</dd>
+        {note && <dd className="line-clamp-2 text-xs text-muted-foreground">{note}</dd>}
       </span>
     </>
   )
+  const cls = 'flex min-w-0 items-start gap-3 rounded-lg p-2.5 text-left'
   return onClick ? (
-    <button type="button" className="stat stat-link" onClick={onClick}>
+    <button type="button" className={cn(cls, 'group relative cursor-pointer pr-6 transition-colors outline-none hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50')} onClick={onClick}>
       {body}
+      <ChevronRight className="absolute top-3 right-1.5 size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" aria-hidden />
     </button>
   ) : (
-    <div className="stat">{body}</div>
+    <div className={cls}>{body}</div>
   )
 }
 
 function Row({ icon, tile, label, note, value }: { icon: ReactNode; tile: TileTone; label: string; note: string; value: string }) {
   return (
-    <tr>
-      <th scope="row">
-        <span className="row-head">
-          <span className={`tile tile-sm tile-${tile}`} aria-hidden>
+    <TableRow className="phone:grid phone:grid-cols-[minmax(0,1fr)_auto] phone:py-2.5 phone:pr-2 phone:pl-4">
+      <TableHead scope="row" className="h-auto w-[30%] py-3 pl-8 whitespace-normal text-foreground phone:w-auto phone:p-0">
+        <span className="flex items-center gap-3">
+          <span className={`tile tile-sm tile-${tile} phone:hidden!`} aria-hidden>
             {icon}
           </span>
-          <span className="row-text">
-            <span className="row-label">{label}</span>
-            <span className="row-note">{note}</span>
+          <span className="flex flex-col">
+            <span className="text-sm font-semibold">{label}</span>
+            <span className="text-xs font-normal text-muted-foreground">{note}</span>
           </span>
         </span>
-      </th>
-      <td>
-        <code className="mono">{value}</code>
-      </td>
-      <td className="row-copy">
+      </TableHead>
+      <TableCell className="phone:col-span-2 phone:row-start-2 phone:p-0 phone:pt-1">
+        <code className="font-mono text-[13px] [overflow-wrap:anywhere] text-foreground/80">{value}</code>
+      </TableCell>
+      <TableCell className="w-px pr-8 phone:col-start-2 phone:row-start-1 phone:w-auto phone:p-0">
         <CopyButton value={value} label={t('Copia {what}', { what: label })} />
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   )
 }
 
 function IssueRow({ issue, onAction }: { issue: Issue; onAction: (a: IssueAction) => void }) {
   const ref = useRef<HTMLLIElement>(null)
   useLayoutEffect(() => alertIn(ref.current, issue.level === 'error'), [])
+  const error = issue.level === 'error'
   return (
-    <li className={`issue issue-${issue.level}`} ref={ref} role={issue.level === 'error' ? 'alert' : undefined}>
-      <span className="issue-icon">
-        {issue.level === 'error' ? <LottieIcon name="cross" size={20} replay={issue.title} className="lottie-current" fallback={<AlertOctagon size={18} />} /> : <AlertTriangle size={18} />}
-      </span>
-      <div className="issue-text">
-        <p className="issue-title">{issue.title}</p>
-        {issue.markup && <Markup text={issue.markup} />}
-        {issue.detail && <p className="issue-detail">{issue.detail}</p>}
-      </div>
-      {issue.actions.length > 0 && (
-        <div className="issue-actions">
-          {issue.actions.map((a) => (
-            <button key={a.label} type="button" className="issue-btn" onClick={() => onAction(a)}>
-              {a.label} <ArrowRight size={14} />
-            </button>
-          ))}
+    <li ref={ref} role={error ? 'alert' : undefined}>
+      <Alert variant={error ? 'destructive' : 'warning'} className="items-center gap-y-1 rounded-xl px-4 py-3.5 has-[>.alert-icon]:grid-cols-[2.25rem_1fr] has-[>.alert-icon]:gap-x-3.5 md:grid-cols-[2.25rem_1fr_auto]!">
+        <span className={cn('alert-icon grid size-9 place-items-center self-start rounded-lg text-white', error ? 'bg-destructive' : 'bg-gs1-orange')}>
+          {error ? <LottieIcon name="cross" size={20} replay={issue.title} className="lottie-current" fallback={<AlertOctagon size={18} />} /> : <AlertTriangle size={18} />}
+        </span>
+        <div className="col-start-2 min-w-0">
+          <AlertTitle className="text-[15px] leading-snug">{issue.title}</AlertTitle>
+          {issue.markup && <Markup text={issue.markup} />}
+          {issue.detail && <p className={cn('mt-0.5 text-[13.5px]', !error && 'text-[#7c3a1b]')}>{issue.detail}</p>}
         </div>
-      )}
+        {issue.actions.length > 0 && (
+          <div className="col-start-2 flex flex-wrap gap-1.5 md:col-start-3 md:row-start-1 md:justify-end">
+            {issue.actions.map((a) => (
+              <Button key={a.label} variant="outline" size="sm" className={cn('group h-9 bg-white', error ? 'border-destructive/25 text-destructive hover:bg-destructive hover:text-white' : 'border-gs1-orange/30 text-warning hover:bg-gs1-orange hover:text-white')} onClick={() => onAction(a)}>
+                {a.label} <ArrowRight className="transition-transform group-hover:translate-x-0.5" />
+              </Button>
+            ))}
+          </div>
+        )}
+      </Alert>
     </li>
   )
 }

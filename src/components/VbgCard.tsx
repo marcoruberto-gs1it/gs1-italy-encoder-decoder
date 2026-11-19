@@ -1,22 +1,33 @@
-import { BadgeCheck, Building2, ExternalLink, Loader2, ShieldAlert } from 'lucide-react'
+import { BadgeCheck, Building2, ExternalLink, Info, Loader2, ShieldAlert } from 'lucide-react'
 import type { Verification } from '../gs1/vbg'
 import { t } from '../i18n'
+import { Alert, AlertTitle } from '@/components/ui/misc'
 import { LottieIcon } from './LottieIcon'
 
 /** Scheda Verified by GS1 della chiave primaria. */
 export function VbgCard({ ai, state }: { ai?: string; state?: Verification | 'loading' }) {
-  if (!state) return <div className="note">{t('Verified by GS1 è disponibile per GTIN, GLN, SSCC, GRAI, GIAI, GSRN, GDTI, GCN, CPI e ITIP.')}</div>
+  if (!state)
+    return (
+      <Alert variant="info">
+        <Info />
+        <AlertTitle className="font-normal">{t('Verified by GS1 è disponibile per GTIN, GLN, SSCC, GRAI, GIAI, GSRN, GDTI, GCN, CPI e ITIP.')}</AlertTitle>
+      </Alert>
+    )
   if (state === 'loading')
     return (
-      <div className="note">
-        <LottieIcon name="scan" size={22} loop className="lottie-current" fallback={<Loader2 size={16} className="spin" />} /> {t('Verifica nel registro Verified by GS1…')}
-      </div>
+      <Alert variant="info">
+        <span className="alert-icon">
+          <LottieIcon name="scan" size={20} loop className="lottie-current" fallback={<Loader2 size={16} className="spin" />} />
+        </span>
+        <AlertTitle className="font-normal">{t('Verifica nel registro Verified by GS1…')}</AlertTitle>
+      </Alert>
     )
   if (state.state === 'error' || state.state === 'invalid')
     return (
-      <div className={`note ${state.state === 'invalid' ? 'bad' : 'warn'}`}>
-        <ShieldAlert size={16} /> {state.message}
-      </div>
+      <Alert variant={state.state === 'invalid' ? 'destructive' : 'warning'}>
+        <ShieldAlert />
+        <AlertTitle className="font-medium">{state.message}</AlertTitle>
+      </Alert>
     )
 
   const l = state.licensee

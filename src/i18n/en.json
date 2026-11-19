@@ -341,7 +341,6 @@
   "Modalità": "Mode",
   "Dati da codificare": "Data to encode",
   "Dato da decodificare": "Data to decode",
-  "Svuota": "Clear",
   "{bits} bit": "{bits} bits",
   "Calcolo in corso": "Calculating",
   "Copia l’EPC in esadecimale": "Copy the EPC in hexadecimal",
@@ -414,5 +413,10 @@
   "Per confezioni molto piccole: contiene solo il GTIN-8.": "For very small packs: carries only the GTIN-8.",
   "Solo per un GTIN-8 senza altri dati.": "Only for a GTIN-8 with no other data.",
   "I 96 bit dell’EPC scritti nel chip": "The 96 EPC bits written to the chip",
-  "Il lettore legge i 96 bit dal chip": "The reader reads the 96 bits from the chip"
+  "Il lettore legge i 96 bit dal chip": "The reader reads the 96 bits from the chip",
+  "Scarica {name} in SVG": "Download {name} as SVG",
+  "Cerca…": "Search…",
+  "Nessun risultato": "No results",
+  "Svuota i campi e riporta tag e parametri ai valori iniziali": "Clear the fields and reset the tag and settings to their defaults",
+  "Cancella i dati": "Clear data"
 }

@@ -1,4 +1,6 @@
+import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 import { defineConfig, loadEnv, type Plugin, type ProxyOptions } from 'vite'
 
 export default defineConfig(({ mode }) => {
@@ -34,7 +36,8 @@ export default defineConfig(({ mode }) => {
 
   return {
     base: process.env.BASE_PATH ?? '/',
-    plugins: [react(), contentSecurityPolicy(env.VITE_VBG_BASE)],
+    plugins: [react(), tailwindcss(), contentSecurityPolicy(env.VITE_VBG_BASE)],
+    resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
     server: { proxy },
     test: { environment: 'node' },
   }

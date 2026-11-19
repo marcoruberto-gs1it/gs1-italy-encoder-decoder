@@ -7,7 +7,7 @@ Web app per codificare e decodificare le chiavi GS1 in tutte le loro rappresenta
 - **Dati GS1**: element string, dati con FNC1, GS1 Digital Link URI, GS1 AI JSON, validati con il GS1 Barcode Syntax Dictionary.
 - **EPC RFID** secondo il **GS1 EPC Tag Data Standard 2.3**: schemi TDS 1.x (SGTIN-96, SGTIN-198, SSCC-96, …), schemi **+** (SGTIN+, DSGTIN+, SSCC+, …, con dati aggiuntivi +AIDC come lotto e scadenza) e schemi **++** (con il dominio del GS1 Digital Link compresso nel tag).
 - **Struttura del tag**: barra dei bit, scheda per ogni campo (header, filter, partizione, AI, indicatori di codifica e lunghezza, hostname, completamento) e mappa della memoria EPC con StoredCRC e Protocol Control.
-- **Data carrier**: EAN-13, GS1-128, GS1 DataBar Expanded, GS1 DataMatrix, GS1 QR Code e QR/DataMatrix con GS1 Digital Link, con identificatore di simbologia e dati trasmessi.
+- **Data carrier**: EAN-13, EAN-8, GS1-128, GS1 DataBar Expanded, GS1 DataMatrix, GS1 QR Code e QR/DataMatrix con GS1 Digital Link, con identificatore di simbologia e dati trasmessi.
 - **Verified by GS1**: prodotto e titolare della licenza; il GS1 Company Prefix della licenza dà la partizione degli schemi TDS 1.x; se Verified by GS1 non lo fornisce, la lunghezza la sceglie l'utente.
 
 Chiavi supportate nell'encoder: GTIN + seriale, SSCC, GLN + estensione, GRAI, GIAI, GSRN, GSRNP, GDTI, GCN, CPI + seriale, ITIP + seriale. Il decoder accetta EPC esadecimale o binario, EPC Tag/Pure Identity URI, GS1 Digital Link (anche compresso), element string, dati del lettore con FNC1 e GTIN.
@@ -41,6 +41,8 @@ Il token Verified by GS1 resta lato server: il browser chiama `/api/vbg` e il pr
 | `src/motion.ts` | Animazioni con GSAP: è l'unico file che lo importa (anche la timeline della scena 3D passa da qui) |
 | `src/three/tagScene.ts` | Tag RAIN RFID in 3D della schermata iniziale (three.js), caricato solo lì; se WebGL manca resta l'illustrazione SVG |
 | `src/anim/lottieData.ts`, `src/components/LottieIcon.tsx` | Icone animate Lottie (esito, errore, copia, lettura in corso), generate nel codice con i colori GS1; player `lottie_light`, senza `eval` |
+| `src/components/ui/` | Componenti [shadcn/ui](https://ui.shadcn.com) (Radix UI, cmdk) sul tema GS1 Italy: pulsanti, campi, menu con ricerca, controlli a segmenti, badge, card, tabelle, avvisi, tooltip |
+| `src/index.css`, `src/legacy.css` | Tailwind CSS 4 con i token del tema (prefisso `--ui-`); `legacy.css` (impaginazione e infografiche) sta in un layer sotto le utility, così le classi dei componenti prevalgono sempre |
 
 Ogni codifica viene riletta con lo stesso motore: se lo schema non restituisce esattamente i dati di partenza (per esempio un seriale con zeri iniziali in SGTIN-96) lo schema è segnalato come non utilizzabile, con il motivo.
 
@@ -50,7 +52,7 @@ Nella versione pubblicata di `TDTtranslator.js`, decodificando un EPC `++` i dat
 
 ## Sicurezza
 
-- **Content-Security-Policy** nella pagina pubblicata (plugin in `vite.config.ts`): script e stili solo dal sito, nessun `unsafe-inline` né `eval` (`wasm-unsafe-eval` solo per la Syntax Engine), connessioni solo verso il Worker di Verified by GS1. Font e librerie sono serviti dal sito: nessuna richiesta a terzi all'apertura.
+- **Content-Security-Policy** nella pagina pubblicata (plugin in `vite.config.ts`): script e stili solo dal sito, nessun `unsafe-inline` né `eval` (`wasm-unsafe-eval` solo per la Syntax Engine), connessioni solo verso il Worker di Verified by GS1. Font e librerie sono serviti dal sito: nessuna richiesta a terzi all'apertura. Per restare dentro la CSP i menu usano Popover non modali (il blocco dello scorrimento di Radix inietterebbe un `<style>`) e non si usano librerie che creano stili a runtime.
 - **Verified by GS1**: il token resta lato server. Il proxy di sviluppo inoltra solo `POST` agli endpoint usati dall'app e rifiuta le richieste da altri siti; il Worker di produzione deve applicare le stesse regole (endpoint, `Origin`, limiti di frequenza). I link e le immagini della risposta, scelti dal titolare della licenza, sono accettati solo se `https:`/`http:` e ogni link mostra il dominio di destinazione.
 - **Link condivisi**: i parametri dell'indirizzo hanno limiti di lunghezza e numero; il dominio del Digital Link accetta solo caratteri da hostname.
 - **CI**: GitHub Actions fissate allo SHA del commit, permessi minimi per job (il build non può pubblicare), `npm audit` prima del build, Dependabot settimanale.
@@ -72,6 +74,8 @@ I motori GS1, i font e le librerie sono open source, tranne GSAP: è gratuito an
 | three.js (tag 3D) | MIT |
 | lottie-web (icone animate) | MIT |
 | lucide-react (icone) | ISC |
+| shadcn/ui (componenti copiati in `src/components/ui`), Radix UI, cmdk, Tailwind CSS, tailwind-merge, clsx, tw-animate-css | MIT |
+| class-variance-authority | Apache 2.0 |
 | GSAP (animazioni) | [Licenza standard GSAP](https://gsap.com/standard-license), gratuita |
 | IBM Plex Sans e IBM Plex Mono (font, serviti dal sito con Fontsource) | SIL Open Font License 1.1 |
 | Strumenti di sviluppo (Vite, Vitest, TypeScript, …) | MIT, Apache 2.0, ISC, MPL 2.0, BSD |

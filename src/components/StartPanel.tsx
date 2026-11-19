@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { ClipboardPaste, Layers, Play } from 'lucide-react'
-import { Section } from './Section'
+import { Section, Sections } from './Section'
+import { Button } from '@/components/ui/button'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { DecodeArt, DigitalLinkIcon, EncodeArt, KeyDataIcon, RfidTagIcon } from './Art'
 import type { Mode } from '../App'
 import { HeroEpc } from './HeroEpc'
@@ -37,41 +39,43 @@ export function StartPanel({ mode, onSample, onExample }: Props) {
           </header>
           <TagStage mode="read" fallback={<DecodeArt />} />
         </div>
-        <table className="formats-table">
-          <caption>{t('Formati riconosciuti')}</caption>
-          <thead>
-            <tr>
-              <th scope="col">{t('Formato')}</th>
-              <th scope="col">{t('Esempio')}</th>
-              <th scope="col">
+        <h2 className="mt-8 mb-3 text-[15px] font-semibold">{t('Formati riconosciuti')}</h2>
+        <div className="overflow-hidden rounded-xl border">
+        <Table aria-label={t('Formati riconosciuti')}>
+          <TableHeader className="phone:hidden">
+            <TableRow className="hover:bg-transparent">
+              <TableHead scope="col" className="pl-4">{t('Formato')}</TableHead>
+              <TableHead scope="col">{t('Esempio')}</TableHead>
+              <TableHead scope="col" className="pr-4">
                 <span className="visually-hidden">{t('Azioni')}</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {DECODE_SAMPLES.map((s) => (
-              <tr key={s.text}>
-                <th scope="row">
-                  <span className="row-head">
+              <TableRow key={s.text} className="phone:grid phone:grid-cols-[minmax(0,1fr)_auto] phone:gap-y-1 phone:px-3 phone:py-3">
+                <TableHead scope="row" className="h-auto w-[34%] py-3 pl-4 whitespace-normal text-foreground phone:w-auto phone:p-0">
+                  <span className="flex items-center gap-3">
                     <span className={`tile tile-sm tile-${KIND_TONE[s.kind]}`} aria-hidden>
                       {s.kind === 'rfid' ? <RfidTagIcon size={16} /> : s.kind === 'web' ? <DigitalLinkIcon size={16} /> : <KeyDataIcon size={16} />}
                     </span>
-                    <span className="row-text">
-                      <strong>{s.label}</strong>
-                      <span>{s.detail}</span>
+                    <span className="flex flex-col">
+                      <strong className="text-sm font-semibold">{s.label}</strong>
+                      <span className="text-xs font-normal text-muted-foreground">{s.detail}</span>
                     </span>
                   </span>
-                </th>
-                <td className="mono">{s.text}</td>
-                <td>
-                  <button type="button" className="btn btn-quiet" onClick={() => onSample(s.text)}>
-                    <Play size={13} /> {t('Prova')}
-                  </button>
-                </td>
-              </tr>
+                </TableHead>
+                <TableCell className="font-mono text-xs break-all text-foreground/80 phone:col-span-2 phone:row-start-2 phone:p-0">{s.text}</TableCell>
+                <TableCell className="w-px pr-4 phone:col-start-2 phone:row-start-1 phone:w-auto phone:p-0">
+                  <Button variant="outline" size="sm" className="text-primary" onClick={() => onSample(s.text)}>
+                    <Play /> {t('Prova')}
+                  </Button>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
+        </div>
         <p className="start-tip">
           <ClipboardPaste size={16} />
           {t('Accetta anche i dati trasmessi da un lettore di barcode, con FNC1 e separatori GS, e un GTIN da solo.')}
@@ -87,17 +91,17 @@ export function StartPanel({ mode, onSample, onExample }: Props) {
           <p>
             {t('Scegli la chiave e inserisci i dati a sinistra: ottieni l’EPC per ogni schema del TDS 2.3, la memoria del tag, i barcode e il GS1 Digital Link.')}
           </p>
-          <button type="button" className="btn btn-accent" onClick={onExample}>
-            <Play size={14} /> {t('Carica un esempio')}
-          </button>
+          <Button variant="brand" size="lg" className="self-start" onClick={onExample}>
+            <Play /> {t('Carica un esempio')}
+          </Button>
         </header>
         <TagStage mode="write" fallback={<EncodeArt />} />
       </div>
-      <div className="sections start-sections">
+      <Sections className="start-sections">
         <Section id="anatomy" tone="teal" icon={<Layers size={18} />} title={t('Com’è fatto un EPC')} summary={t('La stessa chiave in sei forme, dai bit nel tag al link sul web')} open={anatomy} onToggle={() => setAnatomy((a) => !a)}>
           <HeroEpc />
         </Section>
-      </div>
+      </Sections>
     </section>
   )
 }

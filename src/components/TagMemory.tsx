@@ -3,7 +3,7 @@ import type { Analysis } from '../gs1/analyze'
 import { epcBank, hexWord } from '../gs1/rfid'
 import { segmentColors, inkOn, CRC_COLOR, PC_COLOR } from '../colors'
 import { useMotion } from '../motion'
-import { CopyText } from './ui'
+import { CopyText } from './Copy'
 import { TagContents } from './Coverage'
 import { t } from '../i18n'
 
